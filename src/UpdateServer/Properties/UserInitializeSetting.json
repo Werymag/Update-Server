@@ -1,0 +1,14 @@
+{
+  "Users": {
+    "Admin": {
+      "Login": "werymag",
+      "Mail": "werymag@mail.ru",
+      "Password": "15071988"
+    },
+    "User": {
+      "Login": "reader",
+      "Mail": "reader@mail.ru",
+      "Password": "000000"
+    }
+  }
+}
