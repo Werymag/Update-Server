@@ -1,45 +1,55 @@
-﻿@model VersionViewModel
-
+﻿@model ProgramInfo[]
 @{
     ViewData["Title"] = "Files";
 }
 
-<div class="text-center">
-    <h1 class="display-4">@Model.program</h1>
+<div>
+    <h1 class="display-5">Программы:</h1>
+
+
     <table width="80%">
         <tr height="50">
-            <td width="20%">Версия программы</td>
-            <td>Список изменений</td>
-            <td width="15%">Скачать</td>   
+            <td width="15%">Имя программы</td>
+            <td>Актуальная версия</td>
+            <td width="25%">Старые версии</td>
+            <td width="25%">Скачать последнюю версию</td>        
             @if (@User?.Identity?.IsAuthenticated == true)
             {
-                <td width="15%">  Удалить </td>
+                <td width="20%">Удалить программу</td>
             }
         </tr>
 
-        @foreach (ProgramInstallFile file in Model.Files)
+        @foreach (ProgramInfo programInforms in Model)
         {
             <tr height="50">
-                <td>@file.Version</td>
-                <td>@file.Changelog</td>
+                <td>@programInforms.program</td>
+                <td>@programInforms.Version</td>
+                <td>
+                    <a asp-area="" class="text-start" asp-controller="Programs" asp-action="Versions" asp-route-program=@programInforms.program>Скачать</a>
+                </td>
                 <td>
                     <button class="btn btn-primary" type="submit" style="background: rgb(0,0,255);"
-                            type="button" onclick="location.href='@Url.Action("GetInstallFile", "Version",  new { program = @Model.program, version = @file.Version })'">
-                        Download
+                            type="button" onclick="location.href='@Url.Action("GetInstallFile", "Version",  new { program = @programInforms.program, version = @programInforms.Version })'">
+                        Скачать
                     </button>
-                </td>      
+                </td>     
                 @if (@User?.Identity?.IsAuthenticated == true)
                 {
                     <td>
                         <button class="btn btn-primary" type="submit" style="background: rgb(0,0,255);"
-                                type="button" onclick="location.href='@Url.Action("DeleteVersion", "Version",  new { program = @Model.program, version = @file.Version })'">
+                                type="button" onclick="location.href='@Url.Action("DeleteProgram", "Program",  new { program = @programInforms.program})'">
                             Удалить
                         </button>
                     </td>
                 }
+
             </tr>
+            <div> </div>
         }
     </table>
 
-
+@*     @foreach (string program in Model)
+    {
+        <a asp-area="" class="display-6" class="text-start" asp-controller="Programs" asp-action="Index" asp-route-program=@program>@program</a>
+    } *@
 </div>

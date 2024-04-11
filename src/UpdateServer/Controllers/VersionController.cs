@@ -35,28 +35,37 @@ namespace UpdateServer.Controllers
         [HttpGet("GetPrograms")]
         public ActionResult<List<ProgramInfo>> GetPrograms()
         {
-            ///TODO файл для скачивания могут быть не во всех каталогах, обыграть!
-            // The list of programs corresponding to the list of directories in the Programs folder
-            var directoryInfo = Directory.CreateDirectory($"Programs");
-            var programs = directoryInfo.GetDirectories().ToArray();
-
-            var programInforms = new List<ProgramInfo>();
-            foreach (var program in programs)
+            try
             {
+                // The list of programs corresponding to the list of directories in the Programs folder
+                var directoryInfo = Directory.CreateDirectory($"Programs");
+                var programs = directoryInfo.GetDirectories().ToArray();
 
-                var versions = Directory
-                    .GetDirectories(program.FullName, "???.???.???.???")
-                    .Select(d => new Version(new DirectoryInfo(d).Name))
-                    .Order();
-                //Directory.GetDirectories(program.FullName).Select(d => new Version(Path.GetDirectoryName(d))).Order().Last();
-                var actualVersion = versions.Last().ToString(4);
+                var programInforms = new List<ProgramInfo>();
+                foreach (var program in programs)
+                {
 
-                var installFilePath = Directory.GetFiles($"{program.FullName}/{actualVersion}/").FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
-                if (installFilePath is null) return BadRequest();
-                programInforms.Add(new(program.Name, actualVersion, installFilePath));
+                    var versions = Directory
+                        .GetDirectories(program.FullName, "???.???.???.???")
+                        .Select(d => new Version(new DirectoryInfo(d).Name))
+                        .Order().ToList();
+
+                    if (versions.Count == 0) continue;
+                    var actualVersion = versions.Last().ToString(4);
+
+                    var installFilePath = Directory.GetFiles($"{program.FullName}/{actualVersion}/").FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
+                    if (installFilePath is null) return BadRequest();
+                    programInforms.Add(new(program.Name, actualVersion, installFilePath));
+                }
+
+                return Ok(programInforms.ToArray());
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
             }
 
-            return Ok(programInforms.ToArray());
         }
 
         /// <summary>
@@ -64,31 +73,39 @@ namespace UpdateServer.Controllers
         /// </summary>
         [HttpGet("GetVersions")]
         public ActionResult<List<ProgramInfo>> GetVersions(string program)
-        {           
-            // The list of programs corresponding to the list of directories in the Programs folder
-            if (!Path.Exists($"Programs/{program}")) return BadRequest();
-
-            var versions = Directory
-                 .GetDirectories($"Programs/{program}", "???.???.???.???")              
-                 .OrderBy(d => new Version(new DirectoryInfo(d).Name));
-
-            var versionViewModel = new VersionViewModel(program);
-
-            foreach (var version in versions)
+        {
+            try
             {
-                var changeLogFilePath = $"{version}/changelog.txt";
-                var changelog = System.IO.File.Exists(changeLogFilePath) ? System.IO.File.ReadAllText(changeLogFilePath, Encoding.Default) : "";
+                // The list of programs corresponding to the list of directories in the Programs folder
+                if (!Path.Exists($"Programs/{program}")) return BadRequest();
 
-                var installFilePath = Directory.GetFiles(version).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
+                var versions = Directory
+                     .GetDirectories($"Programs/{program}", "???.???.???.???")
+                     .OrderBy(d => new Version(new DirectoryInfo(d).Name));
 
-                if (installFilePath != null)
+                var versionViewModel = new VersionViewModel(program);
+
+                foreach (var version in versions)
                 {
-                    var installFile = new ProgramInstallFile(Path.GetFileName(installFilePath), installFilePath, changelog, new DirectoryInfo(version).Name);
-                    versionViewModel.Files.Add(installFile);
-                }           
-            }
+                    var changeLogFilePath = $"{version}/changelog.txt";
+                    var changelog = System.IO.File.Exists(changeLogFilePath) ? System.IO.File.ReadAllText(changeLogFilePath, Encoding.Default) : "";
 
-            return Ok(versionViewModel);           
+                    var installFilePath = Directory.GetFiles(version).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
+
+                    if (installFilePath != null)
+                    {
+                        var installFile = new ProgramInstallFile(Path.GetFileName(installFilePath), installFilePath, changelog, new DirectoryInfo(version).Name);
+                        versionViewModel.Files.Add(installFile);
+                    }
+                }
+
+                return Ok(versionViewModel);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
+            }
         }
 
         /// <summary>
@@ -99,12 +116,21 @@ namespace UpdateServer.Controllers
         [HttpGet("GetActualVersion")]
         public ActionResult<string> GetActualVersionInfo(string program)
         {
-            if (!Path.Exists($"Programs\\{program}")) return BadRequest("Program not found");
-            var actualVersion = Directory
-                    .GetDirectories($"Programs\\{program}", "???.???.???.???")
-                    .Select(d => new Version(new DirectoryInfo(d).Name))
-                    .Order().Last();
-            return Ok(actualVersion.ToString());
+            try
+            {
+                if (!Path.Exists($"Programs\\{program}")) return BadRequest("Program not found");
+                var actualVersion = Directory
+                        .GetDirectories($"Programs\\{program}", "???.???.???.???")
+                        .Select(d => new Version(new DirectoryInfo(d).Name))
+                        .Order().Last();
+                return Ok(actualVersion.ToString());
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
+            }
+  
         }
 
         /// <summary>
@@ -162,40 +188,37 @@ namespace UpdateServer.Controllers
         /// <param name="sourceFile">Archive with program files</param>
         /// <param name="installFile">Install file</param>
         /// <param name="changelog">List of changes</param>
-        /// <param name="authenticationData">Login and password</param>
+        /// <param name="loginDetail">Login and password</param>
         /// <param name="uploadFileInfo">Information about version</param>
         /// <returns></returns>
         [HttpPost("PostVersion")]
         [RequestSizeLimit(4294967295)]
-        public async Task<ActionResult> Upload([FromForm] AuthenticationData authenticationData,
-         [FromForm] UploadFileInfo uploadFileInfo,
-         IFormFile sourceFile, IFormFile installFile, IFormFile changelog)
+        public async Task<ActionResult> Upload([FromForm] LoginDetails loginDetail,
+        [FromForm] NewVersionData newVersionData)
         {
             try
             {
-                var login = authenticationData.Login;
-                var password = authenticationData.Password;
+                var login = loginDetail.Login;
+                var password = loginDetail.Password;
 
-                if (login is null && password is null) return Unauthorized();
+                if (string.IsNullOrEmpty(login) && string.IsNullOrEmpty(password)) return Unauthorized();
 
-                var isAuthorize = (authenticationData.Login == _configuration["login"]
-                    && authenticationData.Password == _configuration["password"]);
+                var isAuthorize = (loginDetail.Login == _configuration["login"]
+                                && loginDetail.Password == _configuration["password"]);
 
                 if (!isAuthorize) return Unauthorized();
 
-                var version = uploadFileInfo.Version;
-                var program = uploadFileInfo.ProgramName;
+                if (string.IsNullOrEmpty(newVersionData.Version) && string.IsNullOrEmpty(newVersionData.Program)) return BadRequest("File name or version isn't correct");
 
-                if (version is null && program is null) return BadRequest();
+                var result = await SaveVersionAsync(newVersionData.SourceFile, newVersionData.InstallFile, newVersionData.Changelog, newVersionData.Version, newVersionData.Program);
 
-                await SaveVersion(sourceFile, installFile, changelog, version, program);
-
-                return Ok();
+                if (result.IsSuccess) { return Ok(); }
+                return Problem(result.Message);
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e);
-                return BadRequest(e.Message);
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
             }
         }
 
@@ -204,10 +227,23 @@ namespace UpdateServer.Controllers
         /// </summary>    
         [Authorize]
         [HttpGet("DeleteProgram")]
-        public IActionResult DeleteProgram([FromForm] AuthenticationData authenticationData, string? program)
+        public IActionResult DeleteProgram([FromForm] LoginDetails loginDetail, string? program)
         {
+            var login = loginDetail.Login;
+            var password = loginDetail.Password;
+
+            if (string.IsNullOrEmpty(login) && password is null) return Unauthorized();
+
             if (!Directory.Exists($"Programs/{program}/")) return BadRequest();
-            Directory.Delete($"Programs/{program}", true);
+            try
+            {
+                Directory.Delete($"Programs/{program}", true);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
+            }
             return Ok();
         }
 
@@ -219,10 +255,23 @@ namespace UpdateServer.Controllers
         /// <returns></returns>
         [Authorize]
         [HttpGet("DeleteVersion")]
-        public ActionResult DeleteVersion([FromForm] AuthenticationData authenticationData, string? program, string? version)
+        public ActionResult DeleteVersion([FromForm] LoginDetails loginDetail, string? program, string? version)
         {
+            var login = loginDetail.Login;
+            var password = loginDetail.Password;
+
+            if (string.IsNullOrEmpty(login) && password is null) return Unauthorized();
+
             if (!Directory.Exists($"Programs/{program}/{version}")) return BadRequest();
-            Directory.Delete($"Programs/{program}/{version}", true);
+            try
+            {
+                Directory.Delete($"Programs/{program}/{version}", true);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
+            }
             return Ok();
         }
 
@@ -236,46 +285,58 @@ namespace UpdateServer.Controllers
         /// <param name="program">Имя программы</param>
         /// <returns></returns>
         [NonAction]
-        private async Task SaveVersion(IFormFile sourceFile, IFormFile installFile, IFormFile changelog, string? version, string? program)
+        private async Task<(bool IsSuccess, string Message)> SaveVersionAsync
+            (IFormFile sourceFile, IFormFile installFile, IFormFile changelog, string? version, string? program)
         {
-            // Каталог программы
-            Directory.CreateDirectory($"Programs/{program}"); ;
-
-            // Каталог версии
+            // Version directory
             var versionDirectory = $"Programs/{program}/{version}";
 
-            // Временный неидексируемый каталог
+            // Temp non-indexable directory
             var downloadDirectory = $"Programs/{program}/Download";
+            try
+            {
+                // Program directory
+                Directory.CreateDirectory($"Programs/{program}"); ;
+                if (Directory.Exists(versionDirectory)) Directory.Delete(versionDirectory, true);
+                if (Directory.Exists(downloadDirectory)) Directory.Delete(downloadDirectory, true);
 
-            if (Directory.Exists(versionDirectory)) Directory.Delete(versionDirectory, true);
-            if (Directory.Exists(downloadDirectory)) Directory.Delete(downloadDirectory, true);
+                Directory.CreateDirectory($"{downloadDirectory}/src");
 
-            Directory.CreateDirectory($"{downloadDirectory}/src");
+                // Save file to uploads
+                var sourceFilePath = $"{downloadDirectory}/Archive.zip";
+                await using (var fileStream = new FileStream(sourceFilePath, FileMode.Create))
+                { await sourceFile.CopyToAsync(fileStream); }
+                ZipFile.ExtractToDirectory(sourceFilePath, $"{downloadDirectory}/src");
+                System.IO.File.Delete(sourceFilePath);
 
-            // Сохраняем файл в папку uploads
-            var sourceFilePath = $"{downloadDirectory}/Archive.zip";
-            await using (var fileStream = new FileStream(sourceFilePath, FileMode.Create))
-            { await sourceFile.CopyToAsync(fileStream); }
-            ZipFile.ExtractToDirectory(sourceFilePath, $"{downloadDirectory}/src");
-            System.IO.File.Delete(sourceFilePath);
+                // Save install file
+                await using (var fileStream = new FileStream($"{downloadDirectory}/{installFile.FileName}", FileMode.Create))
+                { await installFile.CopyToAsync(fileStream); }
 
-            // Файл установщик
-            await using (var fileStream = new FileStream($"{downloadDirectory}/{installFile.FileName}", FileMode.Create))
-            { await installFile.CopyToAsync(fileStream); }
+                // Save changlog
+                await using (var fileStream = new FileStream($"{downloadDirectory}/{changelog.FileName}", FileMode.Create))
+                { await changelog.CopyToAsync(fileStream); }
 
-            // чейнжлог
-            await using (var fileStream = new FileStream($"{downloadDirectory}/{changelog.FileName}", FileMode.Create))
-            { await changelog.CopyToAsync(fileStream); }
+                // Rename directory
+                Directory.Move(downloadDirectory, versionDirectory);
 
-            // Переименовываю временную директорию в директорию версии
-            Directory.Move(downloadDirectory, versionDirectory);
-
-            ///Создаю файл с хешами всех файлов
-            CreateHashFileList($"Programs\\{program}\\{version}");
+                ///Create hash list file
+                CreateHashFileListAsync($"Programs\\{program}\\{version}");
+                return (true,"Ok");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                // Clear incorrect data
+                if (Directory.Exists($"{downloadDirectory}")) { Directory.Delete($"{downloadDirectory}", true); }
+                if (Directory.Exists($"{versionDirectory}")) { Directory.Delete($"{versionDirectory}", true); }
+                if (Directory.GetDirectories($"Programs\\{program}").Length == 0) { Directory.Delete($"Programs\\{program}", true); }
+                return (false, e.Message);
+            }
         }
 
         /// <summary>
-        /// Список файлов в папке на всю глубину
+        /// Files list
         /// </summary>       
         [NonAction]
         public List<string> FilesFromDirectory(string directory, List<string>? files = null)
@@ -289,17 +350,17 @@ namespace UpdateServer.Controllers
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                _logger.LogError(e, e.Message);
             }
 
             return files ?? new List<string>();
         }
 
         /// <summary>
-        /// Создать файл списка файлов с хешами MD5
+        /// Create files list with md5 hash
         /// </summary>
         [NonAction]
-        private async void CreateHashFileList(string programDirectory)
+        private async void CreateHashFileListAsync(string programDirectory)
         {
             if (!Directory.Exists(programDirectory)) BadRequest();
             var source = $"{programDirectory}\\src";
@@ -307,7 +368,7 @@ namespace UpdateServer.Controllers
             var files = FilesFromDirectory(source);
             foreach (string fileName in files)
             {
-                var hashString = await CreateHashStringForFile(fileName);
+                var hashString = await CreateHashStringForFileAsync(fileName);
                 versionInfo.Add(new FileVersionInfo(fileName.Replace(source, ""), hashString));
             }
 
@@ -317,12 +378,12 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Получить хеш Md5 в виде строки
+        /// Get md5 hash as string
         /// </summary>
-        /// <param name="filePath">Путь к файлу</param>
-        /// <returns>Хеш в виде строки</returns>
+        /// <param name="filePath">File path</param>
+        /// <returns>Has md5 string</returns>
         [NonAction]
-        private async Task<string> CreateHashStringForFile(string filePath)
+        private async Task<string> CreateHashStringForFileAsync(string filePath)
         {
             using var md5 = MD5.Create();
             await using var stream = System.IO.File.OpenRead(filePath);
@@ -331,10 +392,10 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Создаю файлы с хешами всех файлов для всех программ и версий
+        /// Create files lists with md5 hash
         /// </summary>
         [NonAction]
-        private async void RecreateAllHashFiles()
+        private async void RecreateAllHashFilesAsync()
         {
             var programs = Directory.GetDirectories("Programs");
             foreach (var program in programs)
@@ -342,7 +403,7 @@ namespace UpdateServer.Controllers
                 var versions = Directory.GetDirectories($"{program}");
                 foreach (var version in versions)
                 {
-                    CreateHashFileList($"{version}");
+                    CreateHashFileListAsync($"{version}");
                 }
             }
         }

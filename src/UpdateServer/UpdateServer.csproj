@@ -107,13 +107,9 @@
     <Content Update="Properties\UserInitializeSetting.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Update="Views\Programs\Index.cshtml">
+    <Content Update="Views\Programs\Versions.cshtml">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Programs\" />
   </ItemGroup>
 
 </Project>

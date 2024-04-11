@@ -4,10 +4,10 @@
     {
         public VersionViewModel(string program)
         {
-            program = program;
+            this.Program = program;
         }
 
-        public string program { get; set; }
+        public string Program { get; set; }
         public List<ProgramInstallFile> Files { get; set; } = new List<ProgramInstallFile>();
     }
 

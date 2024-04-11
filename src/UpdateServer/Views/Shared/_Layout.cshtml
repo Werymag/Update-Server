@@ -24,12 +24,12 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Главная</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Programs">Программы</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Programs" asp-action="Index">Программы</a>
                         </li>
                         @if (@User?.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Version">Загрузить новую версию</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Programs" asp-action="Upload">Загрузить новую версию</a>
                             </li>
 
                             <li class="nav-item">
