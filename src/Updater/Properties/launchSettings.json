@@ -2,7 +2,7 @@
   "profiles": {
     "Updater": {
       "commandName": "Project",
-      "commandLineArgs": "WellForce\r\n3.0.0.0\r\nc:\\Users\\Andrew\\source\\repos\\Werymag\\UpdateServer\\Tests\\Program\\"
+      "commandLineArgs": "\"C:\\Users\\Andrew\\Documents\\ZERS\\UpdateTest\\Well Force.exe\"\r\n\"http://localhost:5228\""
     }
   }
 }

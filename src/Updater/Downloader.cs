@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -8,139 +10,260 @@ namespace Updater
 {
     public class Downloader
     {
-        private const int versionHistory = 4;
+
 
         /// <summary>
-        /// Загрузка новой версии в AppData/Roaming/{program} и последующее обновление файлов программы в каталоге программы
+        /// Event when file downloaded, copied or failed (null)   
         /// </summary>
-        /// <param name="program">Имя программы для обновления</param>
-        /// <param name="currentVersion">Текущая версия</param>
-        /// <param name="programPath">Путь к файлам программы</param>      
-        public async Task DownloadNewVersionAsync(string program, Version currentVersion, string programPath)
+        public event Action<bool?, string, int, int>? FileDownload;
+
+        public event Func<bool>? IsAgreeToKillProcess;
+
+        /// <summary>
+        /// Path to exe program file
+        /// </summary>
+        public readonly string ProgramPath;
+        /// <summary>
+        /// Program Name
+        /// </summary>
+        public readonly string ProgramName;
+
+        /// <summary>
+        /// Special directory for storage version
+        /// </summary>
+        public readonly string VersionsDirectory;
+        /// <summary>
+        /// Directory for download
+        /// </summary>
+        public readonly string DownloadDirectory;
+        /// <summary>
+        /// Program directory
+        /// </summary>
+        public readonly string ProgramDirectory;
+
+        /// <summary>
+        /// Current version exe file
+        /// </summary>
+        public readonly Version CurrentVersion;
+
+        /// <summary>
+        /// Server address
+        /// </summary>
+        public readonly string Url;
+
+        /// <summary>
+        /// How many old version storage
+        /// </summary>
+        private const int _versionHistory = 4;
+
+        public Downloader(string programPath, string url)
         {
-            var lastVersion = await GetLastVersionAsync(program);
-            if (lastVersion is null || lastVersion <= currentVersion) return;
+            var appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            ProgramPath = programPath;
+            ProgramName = Path.GetFileNameWithoutExtension(programPath);
+            VersionsDirectory = $"{appDataDirectory}\\{ProgramName}\\Versions\\";
+            DownloadDirectory = $"{VersionsDirectory}\\Download\\";
+            ProgramDirectory = Path.GetDirectoryName(programPath) ?? throw new Exception("Wrong path to .exe file");
+            string? version = FileVersionInfo.GetVersionInfo(programPath).FileVersion
+                ?? throw new Exception("Could not determine the application version");
+            CurrentVersion = new Version(version);
+            Url = url;
+        }
 
-            string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var versionsDirectory = $"{appDataDirectory}\\{program}\\Versions\\";
-            if (!Path.Exists(versionsDirectory)) Directory.CreateDirectory(versionsDirectory);
 
-            // Версии хранящиеся в каталоге старых версий
-            var downloadedVersion = Directory.GetDirectories(versionsDirectory)
+        /// <summary>
+        /// Update program to new version
+        /// </summary>
+        public async Task UpdateProgramAsync()
+        {
+            var lastVersion = await GetLastVersionAsync();
+            if (lastVersion is null || lastVersion <= CurrentVersion) return;
+
+            string lastVersionDirectory = PrepareDirectories(lastVersion);
+            await DownloadNewVersionAsync(lastVersion);
+            await KillAllProcess();
+            await Task.Delay(100);
+            MoveNewVersionToProgramDirectory(lastVersionDirectory);
+        }
+
+        /// <summary>
+        /// Kill all process have the same name
+        /// </summary>
+        public async Task KillAllProcess()
+        {
+            List<Process> programProcesses;
+            
+            // 5 attempts to kill process
+            await Task.Run(() =>
+            {
+                int counter = 0;
+                do
+                {
+                    programProcesses = Process.GetProcesses()
+                    .Where(p => p.ProcessName.ToLower() == ProgramName.ToLower())
+                    .ToList();
+
+                    if (programProcesses.Count > 0)
+                    {
+                        if (IsAgreeToKillProcess is null || IsAgreeToKillProcess.Invoke())
+                        {
+                            foreach (Process process in programProcesses)
+                            { process.Kill(); }
+                        }
+                    }
+                    programProcesses = Process.GetProcesses()
+                        .Where(p => p.ProcessName.ToLower() == ProgramName.ToLower())
+                        .ToList();
+                    Task.Delay(50);
+                    counter++;
+                } while (programProcesses.Count > 0 || counter > 4);
+            });
+        }
+
+
+        /// <summary>
+        /// Check is program need update
+        /// </summary>   
+        /// <returns>Is Update Need</returns>
+        public async Task<bool?> IsUpdateNeedAsync()
+        {
+            string? version = FileVersionInfo.GetVersionInfo(ProgramPath).FileVersion;
+            if (version is null) return null;
+            var currentVersion = new Version(version);
+            var lastVersion = await GetLastVersionAsync();
+
+            return (lastVersion > currentVersion);
+        }
+
+        /// <summary>
+        /// Uploading a new version to AppData/Roaming/{program} and then updating the program files in the program directory
+        /// </summary>
+        /// <param name="lastVersion">Last available version</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+
+        public async Task DownloadNewVersionAsync(Version lastVersion)
+        {
+            var fileList = await GetFilesListWithHashAsync(lastVersion)
+                ?? throw new Exception("FileList does not downloaded");
+            for (int i = 0; i < fileList.Count; i++)
+            {
+                VersionInfo? file = fileList[i];
+                var oldVersionFilePath = $"{ProgramDirectory}\\{file.FileName}";
+                var downloadFilePath = $"{DownloadDirectory}\\{file.FileName}";
+                if (File.Exists(oldVersionFilePath))
+                {
+                    // If file has same hash - copy it
+                    var md5Hash = await CreateMd5HashStringForFileAsync(oldVersionFilePath);
+                    if (md5Hash == file.Md5Hash)
+                    {
+                        var directoryName = Path.GetDirectoryName(downloadFilePath);
+                        if (directoryName is not null) Directory.CreateDirectory(directoryName);
+                        File.Copy(oldVersionFilePath, downloadFilePath);
+                        FileDownload?.Invoke(false, file.FileName, i + 1, fileList.Count);
+                        continue;
+                    }
+                }
+
+                bool isDownloadSucceed = await DownloadFileFromUrlAsync(lastVersion, file.FileName);
+
+                FileDownload?.Invoke(isDownloadSucceed ? true : null, file.FileName, i + 1, fileList.Count);
+            }
+        }
+
+
+        /// <summary>
+        /// Clear and create directories
+        /// </summary>
+        /// <param name="lastAvailableVersion"></param>
+        /// <returns></returns>
+        private string PrepareDirectories(Version lastAvailableVersion)
+        {
+            if (!Path.Exists(VersionsDirectory)) Directory.CreateDirectory(VersionsDirectory);
+
+            // Early downloaded versions
+            var earlyDownloadedVersions = Directory.GetDirectories(VersionsDirectory)
                 .Where(s => Version.TryParse(Path.GetFileName(s), out _))
                 .Select(s => new Version(Path.GetFileName(s)))
                 .Order().ToList();
 
-            // Если текущая версия уже существует, но не обновлена - лучше удалить и скачать заново, что бы избежать проблем
-            if (downloadedVersion.Contains(lastVersion)) Directory.Delete($"{versionsDirectory}\\{lastVersion.ToString(4)}", true);
+            // If the current version already exists, but is not installed, delete and download again to avoid problems
+            if (earlyDownloadedVersions.Contains(lastAvailableVersion)) Directory.Delete($"{VersionsDirectory}\\{lastAvailableVersion}", true);
 
-            // Удаляю самые старые версии
-            for (int i = 0; i < downloadedVersion.Count - (versionHistory + 1); i++)
-                Directory.Delete($"{versionsDirectory}\\{downloadedVersion[i].ToString(4)}", true);
+            // Delete last versions directory
+            for (int i = 0; i < earlyDownloadedVersions.Count - (_versionHistory + 1); i++)
+                Directory.Delete($"{VersionsDirectory}\\{earlyDownloadedVersions[i]}", true);
 
-            var downloadDirectory = $"{versionsDirectory}\\Download\\";
-            var lastVersionDirectory = $"{versionsDirectory}\\{lastVersion.ToString(4)}\\";
+            var downloadDirectory = $"{VersionsDirectory}\\Download\\";
+
             if (Directory.Exists(downloadDirectory)) Directory.Delete(downloadDirectory, true);
             Directory.CreateDirectory(downloadDirectory);
 
-            // Резервная копия текущей версии, если не существует
-            var backupOldVersionDirectory = $"{versionsDirectory}\\{currentVersion.ToString(4)}\\";
+            // Backup current version if does not exist
+            var backupOldVersionDirectory = $"{VersionsDirectory}\\{CurrentVersion}\\";
             if (!Path.Exists(backupOldVersionDirectory))
             {
-                CopyAllDataToDirectory(programPath, backupOldVersionDirectory, true);
+                CopyAllDataToDirectory(ProgramDirectory, backupOldVersionDirectory, true);
             }
 
-            var fileList = await GetFilesListWithHashAsync(program, lastVersion);
 
-            if (fileList is null) return;
-            foreach (var file in fileList)
-            {
-                var oldVersionFilePath = $"{programPath}\\{file.FileName}";
-                var downloadFilePath = $"{downloadDirectory}\\{file.FileName}";
-                if (File.Exists(oldVersionFilePath))
-                {
-                    // Если файл текущей версии актуален - копирую его, а не скачиваю
-                    var md5Hash = await CreateMd5HashStringForFileAsync(oldVersionFilePath);
-                    if (md5Hash == file.Md5Hash)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Blue;
-                        Console.WriteLine($"Файл {file.FileName} имеет актуальную версию");
-                        var directoryName = Path.GetDirectoryName(downloadFilePath);
-                        if (directoryName is not null) Directory.CreateDirectory(directoryName);
-                        File.Copy(oldVersionFilePath, downloadFilePath);
-                        continue;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.DarkRed;
-                        Console.WriteLine("Файл неактуален и будет обновлен");
-                    }
-                }
-
-                bool isDownloadSucceed = await DownloadFileFromUrlAsync(program, lastVersion, file.FileName, downloadDirectory);
-                if (isDownloadSucceed)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Файл {file.FileName} успешно скачан");
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Файл {file.FileName} не удалось скачать");
-                }
-            }
-
-            ClearDirectory(programPath);
-            Directory.Move(downloadDirectory, lastVersionDirectory);
-            CopyAllDataToDirectory(lastVersionDirectory, programPath, true);
+            var lastVersionDirectory = $"{VersionsDirectory}\\{lastAvailableVersion}\\";
+            return lastVersionDirectory;
         }
 
         /// <summary>
-        /// Получить актуальную версию указанной программы
+        /// Move downloaded files to program directory
         /// </summary>
-        /// <param name="program">Имя запрашиваемой программы</param>
-        /// <returns>Строка версии или null если программы не существует или ответа нет</returns>
-        private async Task<Version?> GetLastVersionAsync(string program)
+        /// <param name="lastVersionDirectory">Directory with last version files</param>
+        public void MoveNewVersionToProgramDirectory(string lastVersionDirectory)
+        {
+            ClearDirectory(ProgramDirectory);
+            Directory.Move(DownloadDirectory, lastVersionDirectory);
+            CopyAllDataToDirectory(lastVersionDirectory, ProgramDirectory, true);
+        }
+
+        /// <summary>
+        /// Get last version 
+        /// </summary> 
+        /// <returns>Version or null if program does not exist</returns>
+        private async Task<Version?> GetLastVersionAsync()
         {
             var httpClient = new HttpClient();
             using HttpRequestMessage request =
-                new(HttpMethod.Get, $"http://localhost:5228/Version/GetActualVersion?program={program}");
+                new(HttpMethod.Get, $"{Url}/Version/GetActualVersion?program={ProgramName}");
             var response = await httpClient.SendAsync(request);
             var version = await response.Content.ReadAsStringAsync();
             return response.IsSuccessStatusCode ? new Version(version) : null;
         }
 
         /// <summary>
-        /// Получение списка файлов с хешем с сервера
-        /// </summary>
-        /// <param name="program">Имя запрашиваемой программы</param>
-        /// <param name="version">Запрашиваемая версия</param>
-        /// <returns>Список файлов с хешем</returns>
-        private async Task<AllFilesVersionInfo?> GetFilesListWithHashAsync(string program, Version version)
+        /// Get files list with md5 hash
+        /// </summary>>
+        /// <param name="lastVersion">Program version</param>
+        /// <returns>File list with hash</returns>
+        private async Task<AllFilesVersionInfo?> GetFilesListWithHashAsync(Version lastVersion)
         {
             HttpClient httpClient = new HttpClient();
             using HttpRequestMessage request =
-                new(HttpMethod.Get, $"http://localhost:5228/Version/GetFilesListWithHash?program={program}&version={version.ToString()}");
+                new(HttpMethod.Get, $"{Url}/Version/GetFilesListWithHash?program={ProgramName}&version={lastVersion}");
             var response = await httpClient.SendAsync(request);
             return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<AllFilesVersionInfo>() : null;
         }
 
         /// <summary>
-        /// Скачивание файла с сервера
+        /// Download file from server
         /// </summary>
-        /// <param name="program">Программа</param>
-        /// <param name="version">Версия</param>
-        /// <param name="filePath">Путь к файлу на сервере или программе</param>
-        /// <param name="directoryPath">Каталог назначения</param>
-        /// <returns>Успешность скачивания файла</returns>
-        private async Task<bool> DownloadFileFromUrlAsync(string program, Version version, string filePath, string directoryPath)
+        /// <param name="lastVersion">Version</param>
+        /// <param name="filePath">Relative path to file</param>
+        /// <returns>Is success</returns>
+        private async Task<bool> DownloadFileFromUrlAsync(Version lastVersion, string filePath)
         {
             var httpClient = new HttpClient();
 
             using var request =
-                new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5228/Version/GetFile");
+                new HttpRequestMessage(HttpMethod.Get, $"{Url}/Version/GetFile");
 
-            request.Content = JsonContent.Create(new DownloadFileInfo(program, version.ToString(), filePath));
+            request.Content = JsonContent.Create(new DownloadFileInfo(ProgramName, lastVersion.ToString(), filePath));
 
             var response = await httpClient.SendAsync(request);
 
@@ -154,21 +277,24 @@ namespace Updater
             var bytes = await response.Content.ReadAsByteArrayAsync();
             var directory = Path.GetDirectoryName(filePath);
             if (directory is not null && directory != "\\")
-                Directory.CreateDirectory(directoryPath + directory);
+                Directory.CreateDirectory(DownloadDirectory + directory);
 
-            // запись в файл
+            // Save file
             var stream = await response.Content.ReadAsStreamAsync();
-            await using var fileStream = File.Create(directoryPath + filePath);
-            stream.Seek(0, SeekOrigin.Begin);
-            stream.CopyTo(fileStream);
+            await using var fileStream = File.Create(DownloadDirectory + filePath);
+            await Task.Run(() =>
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+                stream.CopyTo(fileStream);
+            });
             return true;
         }
 
         /// <summary>
-        /// Получить хеш Md5 для файла в виде строки
+        /// Get Md5 hash for file as string
         /// </summary>
-        /// <param name="filePath">путь к файл</param>
-        /// <returns>Хеш Md5 в виде строки</returns>
+        /// <param name="filePath">path to file</param>
+        /// <returns>Md5 hash string</returns>
         private async Task<string> CreateMd5HashStringForFileAsync(string filePath)
         {
             using var md5 = MD5.Create();
@@ -178,10 +304,10 @@ namespace Updater
         }
 
         /// <summary>
-        /// Полное копирование директории
+        /// Full directory copy 
         /// </summary>
-        /// <param name="sourceDirectory">Из</param>
-        /// <param name="destinationDirectory">В</param>
+        /// <param name="sourceDirectory">From</param>
+        /// <param name="destinationDirectory">To</param>
         private void CopyAllDataToDirectory(string sourceDirectory, string destinationDirectory, bool recursive = true)
         {
 
@@ -211,7 +337,7 @@ namespace Updater
         }
 
         /// <summary>
-        /// Очистить каталог от всех файлов
+        /// Clear directory
         /// </summary>
         private void ClearDirectory(string directoryPath)
         {
@@ -226,17 +352,17 @@ namespace Updater
     }
 
     /// <summary>
-    /// Структура запроса на скачивание файла с сервера
+    /// Structure of a request to download a file from a server
     /// </summary>
     internal record class DownloadFileInfo(string program, string Version, string FilePath);
 
     /// <summary>
-    /// Список файлов с хешем Md5
+    /// Files list with Md5 hash
     /// </summary>
-    internal class AllFilesVersionInfo : List<FileVersionInfo> { }
+    internal class AllFilesVersionInfo : List<VersionInfo> { }
 
     /// <summary>
-    /// Информация о одном скачиваемом файле
+    /// Version information about file
     /// </summary>
-    internal record class FileVersionInfo(string FileName, string Md5Hash);
+    internal record class VersionInfo(string FileName, string Md5Hash);
 }
