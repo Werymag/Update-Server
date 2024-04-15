@@ -74,16 +74,24 @@ namespace Updater
         /// <summary>
         /// Update program to new version
         /// </summary>
-        public async Task UpdateProgramAsync()
+        public async Task<(bool IsSuccess, string Message)> UpdateProgramAsync()
         {
-            var lastVersion = await GetLastVersionAsync();
-            if (lastVersion is null || lastVersion <= CurrentVersion) return;
+            try
+            {
+                var lastVersion = await GetLastVersionAsync();
+                if (lastVersion is null || lastVersion <= CurrentVersion) return (false, "Update does not need");
 
-            string lastVersionDirectory = PrepareDirectories(lastVersion);
-            await DownloadNewVersionAsync(lastVersion);
-            await KillAllProcess();
-            await Task.Delay(100);
-            MoveNewVersionToProgramDirectory(lastVersionDirectory);
+                string lastVersionDirectory = PrepareDirectories(lastVersion);
+                await DownloadNewVersionAsync(lastVersion);
+                await KillAllProcess();
+                await Task.Delay(100);
+                MoveNewVersionToProgramDirectory(lastVersionDirectory);
+                return (true, "Update does not need");
+            }
+            catch (Exception e)
+            {
+                return (false, e.Message);
+            }
         }
 
         /// <summary>
@@ -92,8 +100,9 @@ namespace Updater
         public async Task KillAllProcess()
         {
             List<Process> programProcesses;
-            
+
             // 5 attempts to kill process
+            bool? isAgreeToKillProcess = null;
             await Task.Run(() =>
             {
                 int counter = 0;
@@ -105,7 +114,8 @@ namespace Updater
 
                     if (programProcesses.Count > 0)
                     {
-                        if (IsAgreeToKillProcess is null || IsAgreeToKillProcess.Invoke())
+                        isAgreeToKillProcess ??= IsAgreeToKillProcess?.Invoke();
+                        if (isAgreeToKillProcess == true)
                         {
                             foreach (Process process in programProcesses)
                             { process.Kill(); }
@@ -117,7 +127,9 @@ namespace Updater
                     Task.Delay(50);
                     counter++;
                 } while (programProcesses.Count > 0 || counter > 4);
-            });
+
+                if (programProcesses.Count > 0) throw new Exception("Can't close the programs");
+            });         
         }
 
 
