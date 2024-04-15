@@ -44,9 +44,8 @@ namespace UpdateServer.Controllers
                 var programInforms = new List<ProgramInfo>();
                 foreach (var program in programs)
                 {
-
                     var versions = Directory
-                        .GetDirectories(program.FullName, "???.???.???.???")
+                        .GetDirectories(program.FullName, "*.*")
                         .Select(d => new Version(new DirectoryInfo(d).Name))
                         .Order().ToList();
 
@@ -80,7 +79,7 @@ namespace UpdateServer.Controllers
                 if (!Path.Exists($"Programs/{program}")) return BadRequest();
 
                 var versions = Directory
-                     .GetDirectories($"Programs/{program}", "???.???.???.???")
+                     .GetDirectories($"Programs/{program}", "*.*")
                      .OrderBy(d => new Version(new DirectoryInfo(d).Name));
 
                 var versionViewModel = new VersionViewModel(program);
@@ -120,7 +119,7 @@ namespace UpdateServer.Controllers
             {
                 if (!Path.Exists($"Programs\\{program}")) return BadRequest("Program not found");
                 var actualVersion = Directory
-                        .GetDirectories($"Programs\\{program}", "???.???.???.???")
+                        .GetDirectories($"Programs\\{program}", "*.*")
                         .Select(d => new Version(new DirectoryInfo(d).Name))
                         .Order().Last();
                 return Ok(actualVersion.ToString());
