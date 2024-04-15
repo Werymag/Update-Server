@@ -9,11 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Programs\WellForce\**" />
-    <Content Remove="Programs\WellForce\**" />
-    <EmbeddedResource Remove="Programs\WellForce\**" />
-    <None Remove="Programs\WellForce\**" />
-    <TypeScriptCompile Remove="Programs\WellForce\**" />
+    <Compile Remove="programs\WellForce\**" />
+    <Content Remove="programs\WellForce\**" />
+    <EmbeddedResource Remove="programs\WellForce\**" />
+    <None Remove="programs\WellForce\**" />
+    <TypeScriptCompile Remove="programs\WellForce\**" />
   </ItemGroup>
 
   <ItemGroup>

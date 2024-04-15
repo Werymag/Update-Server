@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using UpdateServer.Model;
 
 namespace UpdateServer.Controllers
@@ -23,6 +24,7 @@ namespace UpdateServer.Controllers
 
         public IActionResult Index()
         {
+            Console.WriteLine("Получаю версии");
             var programs = _versionController.GetPrograms();
             /// TODO проверить не надо ли поменять на OkResult
             if (programs.Result is OkObjectResult okResult)
@@ -35,6 +37,8 @@ namespace UpdateServer.Controllers
         /// </summary>
         public IActionResult Versions(string program)
         {
+            Console.WriteLine(program);
+
             var programVersions = _versionController.GetVersions(program);
             if (programVersions.Result is OkObjectResult okResult)
                 return View(okResult.Value);

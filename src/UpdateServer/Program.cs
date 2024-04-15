@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("Properties/UserInitializeSetting.json");
 
-
-
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -27,6 +25,10 @@ var app = builder.Build();
 
 app.Configuration["login"] = Environment.GetEnvironmentVariable("login");
 app.Configuration["password"] = Environment.GetEnvironmentVariable("password");
+
+Console.WriteLine($"login:{app.Configuration["login"]}");
+Console.WriteLine($"password:{app.Configuration["password"]}");
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
