@@ -1,1 +1,4 @@
-<h1 align="center">—ервер обновление приложений и скачивани€ дистрибудтивов</h1>
+<h1 align="center">—ервер обновление приложений и скачивани€ установочных файлов</h1>
+
+docker build -t updateserver .
+docker run -p 8888:80  -e login={login} -e password={password} -v {pathtoprograms}:/app/programs  --name updateserver updateserver
