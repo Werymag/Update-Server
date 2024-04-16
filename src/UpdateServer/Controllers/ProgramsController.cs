@@ -24,11 +24,10 @@ namespace UpdateServer.Controllers
 
         public IActionResult Index()
         {
-            Console.WriteLine("Получаю версии");
-            var programs = _versionController.GetPrograms();
+            var programs = _versionController.GetPrograms(); 
             /// TODO проверить не надо ли поменять на OkResult
             if (programs.Result is OkObjectResult okResult)
-                return View(okResult.Value);
+                return View(okResult.Value);        
             return BadRequest();
         }
 

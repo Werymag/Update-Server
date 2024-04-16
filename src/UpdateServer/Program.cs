@@ -15,20 +15,21 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMvc().AddControllersAsServices();
 
 
-// Аутентификация с помощью куки
+// Authentication with cookies
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options => options.LoginPath = "/Home/login");
 builder.Services.AddAuthorization();
+
+// Clear all providers
+builder.Logging.ClearProviders();
+// Log to console
+builder.Logging.AddConsole();   
 
 var app = builder.Build();
 
 
 app.Configuration["login"] = Environment.GetEnvironmentVariable("login");
 app.Configuration["password"] = Environment.GetEnvironmentVariable("password");
-
-Console.WriteLine($"login:{app.Configuration["login"]}");
-Console.WriteLine($"password:{app.Configuration["password"]}");
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
