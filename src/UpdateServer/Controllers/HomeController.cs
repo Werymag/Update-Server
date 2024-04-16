@@ -27,30 +27,6 @@ namespace UpdateServer.Controllers
             return View();
         }
 
-
-        ///// <summary>
-        ///// Upload new version files
-        ///// </summary>
-        ///// <param name="sourceFile">Archive with program files</param>
-        ///// <param name="installFile">Install file</param>
-        ///// <param name="changelog">List of changes</param>
-        ///// <param name="loginDetails">Login and password</param>
-        ///// <param name="uploadFileInfo">Information about version</param>
-        ///// <returns></returns>
-        //[HttpPost("PostVersion")]
-        //[RequestSizeLimit(4294967295)]
-        //public IActionResult Upload([FromForm] LoginDetails loginDetails,
-        // [FromForm] UploadFileInfo uploadFileInfo,
-        // IFormFile sourceFile, IFormFile installFile, IFormFile changelog)
-        //{
-        //    var programs = _versionController.Upload(loginDetails, uploadFileInfo, sourceFile, installFile, changelog);
-
-        //    if (programs.Result is OkObjectResult)
-        //        return RedirectToAction("Index", "Programs", new { program = uploadFileInfo.ProgramName });
-        //    return BadRequest();
-        //}
-
-
         public async Task<IActionResult> Login(string? returnUrl, LoginVewModel authorizationData)
         {
             if (authorizationData.Login == _configuration["login"]

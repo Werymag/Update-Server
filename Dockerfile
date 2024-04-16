@@ -9,7 +9,8 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["src/UpdateServer/UpdateServer.csproj", "UpdateServer/"]
 RUN dotnet restore "UpdateServer/UpdateServer.csproj"
-COPY /src .
+#COPY /src .
+COPY ["/src/UpdateServer", "UpdateServer/"]
 WORKDIR "/src/UpdateServer"
 RUN dotnet build "UpdateServer.csproj" -c Release -o /app/build
 

@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("Properties/UserInitializeSetting.json");
 
-
-
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -17,10 +15,15 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMvc().AddControllersAsServices();
 
 
-// Аутентификация с помощью куки
+// Authentication with cookies
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options => options.LoginPath = "/Home/login");
 builder.Services.AddAuthorization();
+
+// Clear all providers
+builder.Logging.ClearProviders();
+// Log to console
+builder.Logging.AddConsole();   
 
 var app = builder.Build();
 
