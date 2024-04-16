@@ -1,4 +1,5 @@
-<h1 align="center">Сервер обновление приложений и скачивания установочных файлов</h1>
+<h1 align="center">РЎРµСЂРІРµСЂ РѕР±РЅРѕРІР»РµРЅРёРµ РїСЂРёР»РѕР¶РµРЅРёР№ Рё СЃРєР°С‡РёРІР°РЅРёСЏ СѓСЃС‚Р°РЅРѕРІРѕС‡РЅС‹С… С„Р°Р№Р»РѕРІ</h1>
 
 docker build -t updateserver .
+
 docker run -p 8888:80  -e login={login} -e password={password} -v {pathtoprograms}:/app/programs  --name updateserver updateserver
