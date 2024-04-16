@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{7E69A57A-6F51-4DE1-A257-6A5F91106C53}"
 	ProjectSection(SolutionItems) = preProject
 		Dockerfile = Dockerfile
+		LICENSE.md = LICENSE.md
 		Readme.Md = Readme.Md
 	EndProjectSection
 EndProject
