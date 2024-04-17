@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddJsonFile("Properties/UserInitializeSetting.json");
 
 builder.Services.AddControllers();
 

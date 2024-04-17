@@ -104,9 +104,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="Properties\UserInitializeSetting.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Update="Views\Programs\Versions.cshtml">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
