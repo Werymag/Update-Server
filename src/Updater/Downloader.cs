@@ -181,6 +181,10 @@ namespace Updater
 
                 FileDownload?.Invoke(isDownloadSucceed ? true : null, file.FileName, i + 1, fileList.Count);
             }
+
+            //copy uninstall file
+            var uninstallFile = Directory.GetFiles(ProgramDirectory).FirstOrDefault(n => n.Contains("unins"));
+            if (uninstallFile is not null) { File.Copy(uninstallFile, $"{DownloadDirectory}//{Path.GetFileName(uninstallFile)}"); };
         }
 
 
