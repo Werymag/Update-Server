@@ -85,7 +85,7 @@ namespace UpdateServer.Controllers
 
                 foreach (var version in versions)
                 {
-                    var changeLogFilePath = $"{version}/changelog.txt";
+                    var changeLogFilePath = $"{version}/Changelog.txt";
                     var changelog = System.IO.File.Exists(changeLogFilePath) ? System.IO.File.ReadAllText(changeLogFilePath, Encoding.Default) : "";
 
                     var installFilePath = Directory.GetFiles(version).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
