@@ -10,7 +10,7 @@
 
 Описание Api серера для доступа к файлам версий программ.
 
-Получить список доступных для скачивания программ:
+#### ⬤  Получить список доступных для скачивания программ:
 ```
 http://{serverulr}/Version/GetPrograms
 ```
@@ -34,7 +34,7 @@ http://{serverulr}/Version/GetPrograms
 
 
 
-Получить список доступых версий для программы:
+#### ⬤ Получить список доступых версий для программы:
 ```
 http://{serverulr}/Version/GetVersions
     ? program={имя программы}
@@ -49,18 +49,60 @@ http://{serverulr}/Version/GetVersions
   "versions":
     [
       {
-        "version":"1.0.0.15",
-        "changelog":"Исправление критических багов"       
+        "Version":"1.0.0.15",
+        "Changelog":"Исправление критических багов"       
       },
       {
-        "version":"1.1.0.0",
-        "changelog":"Добавлена возможность автоматического обновления программы при запуске"       
+        "Version":"1.1.0.0",
+        "Changelog":"Добавлена возможность автоматического обновления программы при запуске"       
       }
     ]
 }
 ```
 
 
+#### ⬤ Получить список доступых версий для программы:
+```
+http://{serverulr}/Version/GetActualVersion
+    ? program={имя программы}
+```
+Ответ возвращается в формате JSON.
+
+Содержание ответа: номер актуальной версии программы.
+```
+1.3.10.0
+```
+
+
+
+#### ⬤ Получить список доступых версий для программы:
+```
+http://{serverulr}/Version/GetFilesListWithHash
+    ? program={имя программы}
+    & version={номер версий}
+```
+Ответ возвращается в формате JSON.
+
+Содержание ответа: список файлов приложения с MD5 хешем в виде строки
+```
+[
+  {"FileName":"\\Accessibility.dll","Md5Hash":"8c2bceb862e7d6fc370f9b8f0941d67e"},
+  {"FileName":"\\Calculate_reports.dll","Md5Hash":"8c3d1795025ee478c457ffc43f512799"},
+  {"FileName":"\\Calculate_reports.pdb","Md5Hash":"a223e0e5e2b9c7e4adbdfe84b5294429"},
+  {"FileName":"\\ClosedXML.dll","Md5Hash":"2023ac70abbf3843869f671f98c99d1b"},
+  {"FileName":"\\clretwrc.dll","Md5Hash":"9e4d24c879d87b2f1470e76f876b5e26"},
+  ...
+]
+```
+
+#### ⬤ Загрузить файл:
+```
+http://{serverulr}/Version/GetFile
+    ? Program={имя программы}
+    & Version={номер версий}
+    & FilePath={оносительный путь к файлу}
+```
+Ответ возвращается в формате бинарного файла.
 
 docker clone {}
 docker build -t updateserver .
