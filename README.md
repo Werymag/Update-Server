@@ -9,7 +9,7 @@
 git clone https://github.com/Werymag/Update-Server.git
 ```
 ```
-docker build -t updateserver .
+docker build -t updateserver Update-Server
 ```
 ```
 docker run -p {serverport}:80  -e login={login} -e password={password} -v {pathtofiles}:/app/programs  --name updateserver updateserver
