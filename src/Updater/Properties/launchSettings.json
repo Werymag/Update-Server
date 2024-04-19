@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Updater": {
-      "commandName": "Project",
-      "commandLineArgs": "\"c:\\Program Files (x86)\\Well Force\\\\Well Force.exe\"\r\n\"http://programs.werymag.ru\""
-    }
-  }
-}
