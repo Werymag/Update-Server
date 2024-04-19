@@ -13,8 +13,8 @@ html {
 }
 
 html {
-  position: relative;
-  min-height: 100%;
+    position: relative;
+    min-height: 100%;
 }
 
 body {
@@ -43,6 +43,19 @@ body {
     justify-content: flex-end;
 }
 
+
+.tb {
+    padding: 0px 5px;
+}
+
 li:last-child {
     margin-left: auto;
+}
+
+td, .pad {
+    padding: 5px;
+}
+
+.tb-left {
+    text-align: left;
 }

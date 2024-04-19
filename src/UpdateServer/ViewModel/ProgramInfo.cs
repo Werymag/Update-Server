@@ -1,4 +1,4 @@
 ﻿namespace UpdateServer.ViewModel
 {
-    public record class  ProgramInfo(string program, string Version, string InstallFilePath);
+    public record class  ProgramInfo(string Program, string Version);
 }

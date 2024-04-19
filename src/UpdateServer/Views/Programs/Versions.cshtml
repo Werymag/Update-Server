@@ -17,11 +17,11 @@
             }
         </tr>
 
-        @foreach (ProgramInstallFile file in Model.Files)
+        @foreach (ProgramVersionInfo file in Model.Versions)
         {
             <tr height="50">
                 <td>@file.Version</td>
-                <td>@file.Changelog</td>
+                <td class="tb-left">@file.Changelog</td>
                 <td>
                     <button class="btn btn-primary" type="submit" style="background: rgb(0,0,255);"
                             type="button" onclick="location.href='@Url.Action("GetInstallFile", "Version",  new { program = @Model.Program, version = @file.Version })'">
