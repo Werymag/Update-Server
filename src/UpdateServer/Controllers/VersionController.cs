@@ -185,13 +185,10 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Upload new version files
+        /// Upload new program version
         /// </summary>
-        /// <param name="sourceFile">Archive with program files</param>
-        /// <param name="installFile">Install file</param>
-        /// <param name="changelog">List of changes</param>
         /// <param name="loginDetail">Login and password</param>
-        /// <param name="uploadFileInfo">Information about version</param>
+        /// <param name="newVersionData">New version info</param>
         /// <returns></returns>
         [HttpPost("PostVersion")]
         [RequestSizeLimit(4294967295)]
@@ -280,13 +277,13 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Сохранение новой версии на диск
+        /// Save new version
         /// </summary>
-        /// <param name="sourceFile">Архив с файлами программы</param>
-        /// <param name="installFile">Установочный файл</param>
-        /// <param name="changelog">Список изменений</param>
-        /// <param name="version">Версия</param>
-        /// <param name="program">Имя программы</param>
+        /// <param name="sourceFile">Archive with program files</param>
+        /// <param name="installFile">Install file</param>
+        /// <param name="changelog">List of changes</param>
+        /// <param name="program">Program name</param>
+        /// <param name="version">Version</param>
         /// <returns></returns>
         [NonAction]
         private async Task<(bool IsSuccess, string Message)> SaveVersionAsync
