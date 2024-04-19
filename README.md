@@ -6,7 +6,7 @@
 ## Процедура запуска сервера с использованием docker
 
 ```
-docker clone {}
+docker clone https://github.com/Werymag/Update-Server.git
 ```
 ```
 docker build -t updateserver .
