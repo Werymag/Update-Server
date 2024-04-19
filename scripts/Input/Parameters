@@ -1,0 +1,9 @@
+programName=Program Name
+publishProfilePath=\Path\to\publish\profile.csproj
+sourceFilePath=\Publish.zip
+installFilePath=\Output\Program Name Install.exe
+changelogFilePath=\Input\Changelog.txt
+fileExePath=\Publish\Program Name.exe
+login=admin
+password=admin
+url=http://serverurl

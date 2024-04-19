@@ -14,6 +14,28 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{7E69A5
 		Readme.Md = Readme.Md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{9A981C47-DB84-49DE-B74B-9A30F9535608}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\installer.iss = scripts\installer.iss
+		scripts\PublishAndSendVersion.ps1 = scripts\PublishAndSendVersion.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Subscripts", "Subscripts", "{855A6BE1-BA70-4651-A33E-B1E2701A2D9C}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Subscripts\Archive.ps1 = scripts\Subscripts\Archive.ps1
+		scripts\Subscripts\Publish.ps1 = scripts\Subscripts\Publish.ps1
+		scripts\Subscripts\RemoveFiles.ps1 = scripts\Subscripts\RemoveFiles.ps1
+		scripts\Subscripts\SendFileToServer.ps1 = scripts\Subscripts\SendFileToServer.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Input", "Input", "{205BF0B8-981C-426A-9316-3F7D51F54477}"
+	ProjectSection(SolutionItems) = preProject
+		scripts\Input\Changelog.txt = scripts\Input\Changelog.txt
+		scripts\Input\Description.txt = scripts\Input\Description.txt
+		scripts\Input\Parameters = scripts\Input\Parameters
+		scripts\Input\Setup.ico = scripts\Input\Setup.ico
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +52,9 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{CDDB2188-066D-4C85-B34C-E5CEE40CFEAA} = {A389DA46-2791-4FD3-A6A8-0FA2CFB14939}
+		{9A981C47-DB84-49DE-B74B-9A30F9535608} = {7E69A57A-6F51-4DE1-A257-6A5F91106C53}
+		{855A6BE1-BA70-4651-A33E-B1E2701A2D9C} = {9A981C47-DB84-49DE-B74B-9A30F9535608}
+		{205BF0B8-981C-426A-9316-3F7D51F54477} = {9A981C47-DB84-49DE-B74B-9A30F9535608}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {688E7029-30B5-4104-91C0-2C1B022992F1}

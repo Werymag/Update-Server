@@ -3,4 +3,4 @@ clear
 $publishProfilePath = $currentPath  + $publishProfilePath
 dotnet publish $publishProfilePath  -p:PublishProfile=FolderProfile
 "Finish publish"
-#Read-Host $currentPath + "asdasda"
+#Read-Host $currentPath
