@@ -1,5 +1,19 @@
 <h1 align="center">Сервер обновление приложений и скачивания установочных файлов</h1>
 
+
+## Процедура запуска сервера с использованием docker
+
+```
+docker clone {}
+```
+```
+docker build -t updateserver .
+```
+```
+docker run -p {serverport}:80  -e login={login} -e password={password} -v {pathtofiles}:/app/programs  --name updateserver updateserver
+```
+
+
 Простой сервер для автоматической загрузки и последущего обновление десктопных приложений. 
 
 Сервер состоит из двух частей:
@@ -8,7 +22,7 @@
 
 
 
-Описание Api серера для доступа к файлам версий программ.
+## Описание Api серера для доступа к файлам версий программ.
 
 #### ⬤  Получить список доступных для скачивания программ:
 ```
@@ -22,12 +36,12 @@ http://{serverulr}/Version/GetPrograms
 ```
 [
   {
-    "program":"Program Name 1",
+    "Program":"Program Name 1",
     "Version":"1.0.0.2"
   },
   {
-    "program":"Program Name 2",
-    "version":"3.2.0.13"
+    "Program":"Program Name 2",
+    "Version":"3.2.0.13"
   }
 ]
 ```
@@ -37,12 +51,13 @@ http://{serverulr}/Version/GetPrograms
 #### ⬤ Получить список доступых версий для программы:
 ```
 http://{serverulr}/Version/GetVersions
-    ? program={имя программы}
+    ? Program={имя программы}
 ```
 Ответ возвращается в формате JSON.
 
 Содержание ответа: наименование программы и информация о доступных для скачивания версиях.
 Информация о версиях представляет из себя номер версии и список изменений
+Пример ответа:
 ```
 {
   "program":"Program Name 1",
@@ -61,14 +76,15 @@ http://{serverulr}/Version/GetVersions
 ```
 
 
-#### ⬤ Получить список доступых версий для программы:
+#### ⬤ Получить актуальную версию программы
 ```
 http://{serverulr}/Version/GetActualVersion
-    ? program={имя программы}
+    ? Program={имя программы}
 ```
 Ответ возвращается в формате JSON.
 
 Содержание ответа: номер актуальной версии программы.
+Пример ответа:
 ```
 1.3.10.0
 ```
@@ -78,12 +94,13 @@ http://{serverulr}/Version/GetActualVersion
 #### ⬤ Получить список доступых версий для программы:
 ```
 http://{serverulr}/Version/GetFilesListWithHash
-    ? program={имя программы}
-    & version={номер версий}
+    ? Program={имя программы}
+    & Version={номер версий}
 ```
 Ответ возвращается в формате JSON.
 
-Содержание ответа: список файлов приложения с MD5 хешем в виде строки
+Содержание ответа: список файлов приложения с MD5 хешем в виде строки.
+Пример ответа:
 ```
 [
   {"FileName":"\\Accessibility.dll","Md5Hash":"8c2bceb862e7d6fc370f9b8f0941d67e"},
@@ -95,7 +112,7 @@ http://{serverulr}/Version/GetFilesListWithHash
 ]
 ```
 
-#### ⬤ Загрузить файл:
+#### ⬤ Скачать обновляемый файл программы:
 ```
 http://{serverulr}/Version/GetFile
     ? Program={имя программы}
@@ -104,6 +121,13 @@ http://{serverulr}/Version/GetFile
 ```
 Ответ возвращается в формате бинарного файла.
 
-docker clone {}
-docker build -t updateserver .
-docker run -p 8888:80  -e login={login} -e password={password} -v {pathtoprograms}:/app/programs  --name updateserver updateserver
+
+#### ⬤ Скачать установочный файл программы:
+```
+http://{serverulr}/Version/GetInstallFile
+    ? Program={имя программы}
+    & Version={номер версий}
+```
+Ответ возвращается в формате установочного файла программы.
+
+
