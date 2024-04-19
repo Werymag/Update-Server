@@ -131,10 +131,6 @@ http://{serverulr}/Version/GetInstallFile
 Ответ возвращается в формате установочного файла программы.
 
 Сайт представляет из себя странцу для скачивания программ, загрузка и удаление мерсий программы возможна только полсе авторизации данными указанными при запуске контейнера:
-![image](https://github.com/Werymag/Update-Server/assets/60127528/81720e5a-5ce2-4a6a-9390-a28820397e86 | width=100)
 
-![image](https://github.com/Werymag/Update-Server/assets/60127528/8e9e86f2-e878-4fc6-9b46-445aced82454)
-
-![image](https://github.com/Werymag/Update-Server/assets/60127528/2f601592-fc60-4478-bdf4-9d9d02dca9ed)
-
+<img src="https://github.com/Werymag/Update-Server/assets/60127528/81720e5a-5ce2-4a6a-9390-a28820397e86" height="180"> <img src="https://github.com/Werymag/Update-Server/assets/60127528/8e9e86f2-e878-4fc6-9b46-445aced82454" height="180"> <img src="https://github.com/Werymag/Update-Server/assets/60127528/2f601592-fc60-4478-bdf4-9d9d02dca9ed" height="180">
 
