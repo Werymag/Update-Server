@@ -8,9 +8,9 @@
         }
 
         public string Program { get; set; }
-        public List<ProgramInstallFile> Files { get; set; } = new List<ProgramInstallFile>();
+        public List<ProgramVersionInfo> Versions { get; set; } = new List<ProgramVersionInfo>();
     }
 
-    public record class ProgramInstallFile(string FileName, string FilePath, string Changelog, string Version);
+    public record class ProgramVersionInfo(string Version, string Changelog);
 
 }

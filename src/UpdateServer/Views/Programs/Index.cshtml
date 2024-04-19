@@ -7,10 +7,10 @@
     <h1 class="display-5">Программы:</h1>
 
 
-    <table width="80%">
+    <table width="95%">
         <tr height="50">
-            <td width="15%">Имя программы</td>
-            <td>Актуальная версия</td>
+            <td width="20%">Имя программы</td>
+            <td width="15%">Актуальная версия</td>
             <td width="25%">Старые версии</td>
             <td width="25%">Скачать последнюю версию</td>        
             @if (@User?.Identity?.IsAuthenticated == true)
@@ -22,14 +22,14 @@
         @foreach (ProgramInfo programInforms in Model)
         {
             <tr height="50">
-                <td>@programInforms.program</td>
+                <td>@programInforms.Program</td>
                 <td>@programInforms.Version</td>
                 <td>
-                    <a asp-area="" class="text-start" asp-controller="Programs" asp-action="Versions" asp-route-program=@programInforms.program>Скачать</a>
+                    <a asp-area="" class="text-start" asp-controller="Programs" asp-action="Versions" asp-route-program=@programInforms.Program>Скачать</a>
                 </td>
                 <td>
                     <button class="btn btn-primary" type="submit" style="background: rgb(0,0,255);"
-                            type="button" onclick="location.href='@Url.Action("GetInstallFile", "Version",  new { program = @programInforms.program, version = @programInforms.Version })'">
+                            type="button" onclick="location.href='@Url.Action("GetInstallFile", "Version",  new { program = @programInforms.Program, version = @programInforms.Version })'">
                         Скачать
                     </button>
                 </td>     
@@ -37,7 +37,7 @@
                 {
                     <td>
                         <button class="btn btn-primary" type="submit" style="background: rgb(0,0,255);"
-                                type="button" onclick="location.href='@Url.Action("DeleteProgram", "Programs",  new { program = @programInforms.program})'">
+                                type="button" onclick="location.href='@Url.Action("DeleteProgram", "Programs",  new { program = @programInforms.Program})'">
                             Удалить
                         </button>
                     </td>

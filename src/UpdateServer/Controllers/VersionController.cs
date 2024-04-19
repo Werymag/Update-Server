@@ -52,9 +52,9 @@ namespace UpdateServer.Controllers
                     if (versions.Count == 0) continue;
                     var actualVersion = versions.Last().ToString(4);
 
-                    var installFilePath = Directory.GetFiles($"{program.FullName}/{actualVersion}/").FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
-                    if (installFilePath is null) return BadRequest();
-                    programInforms.Add(new(program.Name, actualVersion, installFilePath));
+                    //var installFilePath = Directory.GetFiles($"{program.FullName}/{actualVersion}/").FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
+                    //if (installFilePath is null) return BadRequest();
+                    programInforms.Add(new(program.Name, actualVersion));
                 }
 
                 return Ok(programInforms.ToArray());
@@ -88,13 +88,8 @@ namespace UpdateServer.Controllers
                     var changeLogFilePath = $"{version}/Changelog.txt";
                     var changelog = System.IO.File.Exists(changeLogFilePath) ? System.IO.File.ReadAllText(changeLogFilePath, Encoding.Default) : "";
 
-                    var installFilePath = Directory.GetFiles(version).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
-
-                    if (installFilePath != null)
-                    {
-                        var installFile = new ProgramInstallFile(Path.GetFileName(installFilePath), installFilePath, changelog, new DirectoryInfo(version).Name);
-                        versionViewModel.Files.Add(installFile);
-                    }
+                    var installFile = new ProgramVersionInfo(new DirectoryInfo(version).Name, changelog);
+                    versionViewModel.Versions.Add(installFile);
                 }
 
                 return Ok(versionViewModel);
@@ -140,10 +135,18 @@ namespace UpdateServer.Controllers
         [HttpGet("GetFilesListWithHash")]
         public async Task<ActionResult<string>> GetProgramFiles(string program, string version)
         {
-            var hashFileListPath = $"programs/{program}/{version}/FilesHash.json";
-            if (!System.IO.File.Exists(hashFileListPath)) BadRequest();
-            var hashFileList = await System.IO.File.ReadAllTextAsync(hashFileListPath);
-            return Ok(hashFileList);
+            try
+            {
+                var hashFileListPath = $"programs/{program}/{version}/FilesHash.json";
+                if (!System.IO.File.Exists(hashFileListPath)) BadRequest();
+                var hashFileList = await System.IO.File.ReadAllTextAsync(hashFileListPath);
+                return Ok(hashFileList);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
+            }         
         }
 
         /// <summary>
@@ -153,7 +156,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetFile")]
         public ActionResult GetFile([FromBody] DownloadFileInfo fileInfo)
         {
-            string program = fileInfo.program; string version = fileInfo.Version; string filePath = fileInfo.FilePath;
+            string program = fileInfo.Program; string version = fileInfo.Version; string filePath = fileInfo.FilePath;
 
             var versionFolder = $"programs/{program}/{version}/src/";
             if (!System.IO.File.Exists(versionFolder + filePath))
