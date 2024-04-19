@@ -7,7 +7,7 @@ using UpdateServer.Model;
 namespace UpdateServer.Controllers
 {
     /// <summary>
-    /// Контроллер страницы списка доступных программ
+    /// Program list controller
     /// </summary>
     public class ProgramsController : Controller
 	{
@@ -74,11 +74,7 @@ namespace UpdateServer.Controllers
         /// <summary>
         /// Upload new version
         /// </summary>
-        /// <param name="program">Program name</param>
-        /// <param name="version">Version number</param>
-        /// <param name="sourceFile">Archive with program files</param>
-        /// <param name="installFile">Install file</param>
-        /// <param name="changelog">File with changlog</param>
+        /// <param name="newVersionData">New version info</param>
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> Upload(NewVersionData newVersionData)

@@ -9,17 +9,18 @@ using UpdateServer.ViewModel;
 
 namespace UpdateServer.Controllers
 {
+    /// <summary>
+    /// Home page controllers
+    /// </summary>
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IConfiguration _configuration;
-        private readonly VersionController _versionController;
 
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, VersionController versionController)
+        public HomeController(ILogger<HomeController> logger, IConfiguration configuration)
         {
             this._logger = logger;
             this._configuration = configuration;
-            this._versionController = versionController;
         }
 
         public IActionResult Index()
@@ -27,6 +28,12 @@ namespace UpdateServer.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Login page
+        /// </summary>
+        /// <param name="returnUrl">url to redirect</param>
+        /// <param name="authorizationData">login and password</param>
+        /// <returns></returns>
         public async Task<IActionResult> Login(string? returnUrl, LoginVewModel authorizationData)
         {
             if (authorizationData.Login == _configuration["login"]
@@ -53,7 +60,6 @@ namespace UpdateServer.Controllers
         {
             return View();
         }
-
 
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
