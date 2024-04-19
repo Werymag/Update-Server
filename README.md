@@ -13,6 +13,11 @@ docker build -t updateserver .
 docker run -p {serverport}:80  -e login={login} -e password={password} -v {pathtofiles}:/app/programs  --name updateserver updateserver
 ```
 
+Где:
+  serverport - порт по которому будет дотсупен сайт и сервер API;
+  login, password - логин и пароль для доступа к функионало загрузки и удаление версий;
+  pathtofiles - место хранения файлов програм;
+  
 
 Простой сервер для автоматической загрузки и последущего обновление десктопных приложений. 
 
