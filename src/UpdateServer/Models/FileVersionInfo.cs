@@ -1,4 +1,4 @@
-﻿namespace UpdateServer.Model;
+﻿namespace UpdateServer.Models;
 
 public class AllFilesVersionInfo : List<FileVersionInfo>
 { }

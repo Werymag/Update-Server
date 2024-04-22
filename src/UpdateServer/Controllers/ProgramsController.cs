@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using UpdateServer.Model;
+using UpdateServer.Models;
 
 namespace UpdateServer.Controllers
 {

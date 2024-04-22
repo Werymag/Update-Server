@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace UpdateServer.Model
+namespace UpdateServer.Models
 {
     public record class NewVersionData(string Program, string Version,
          IFormFile SourceFile, IFormFile InstallFile, IFormFile Changelog);

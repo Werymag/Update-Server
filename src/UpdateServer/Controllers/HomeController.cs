@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Diagnostics;
 using System.Security.Claims;
-using UpdateServer.Model;
+using UpdateServer.Models;
 using UpdateServer.ViewModel;
 
 namespace UpdateServer.Controllers

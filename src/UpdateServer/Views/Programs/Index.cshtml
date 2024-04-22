@@ -32,6 +32,8 @@
                             type="button" onclick="location.href='@Url.Action("GetInstallFile", "Version",  new { program = @programInforms.Program, version = @programInforms.Version })'">
                         Скачать
                     </button>
+
+                   @*  <a asp-area="" class="text-start" asp-controller="Version" asp-action="GetInstallFile" asp-route-program=@programInforms.Program asp-route-version=@programInforms.Version>Скачать</a> *@
                 </td>     
                 @if (@User?.Identity?.IsAuthenticated == true)
                 {

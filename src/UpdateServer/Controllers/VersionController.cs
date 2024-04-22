@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting.Internal;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Linq;
@@ -7,9 +8,9 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using UpdateServer.Model;
+using UpdateServer.Models;
 using UpdateServer.ViewModel;
-using FileVersionInfo = UpdateServer.Model.FileVersionInfo;
+using FileVersionInfo = UpdateServer.Models.FileVersionInfo;
 
 namespace UpdateServer.Controllers
 {
@@ -22,10 +23,13 @@ namespace UpdateServer.Controllers
     {
         private readonly ILogger<ProgramsController> _logger;
         private readonly IConfiguration _configuration;
-        public VersionController(ILogger<ProgramsController> logger, IConfiguration configuration)
+        private readonly IWebHostEnvironment _hostingEnvironment;
+        public VersionController(ILogger<ProgramsController> logger, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
         {
+
             this._logger = logger;
             this._configuration = configuration;
+            this._hostingEnvironment = hostingEnvironment;
         }
 
 
@@ -154,7 +158,7 @@ namespace UpdateServer.Controllers
         /// </summary>
         /// <param name="fileInfo">Information about file</param>
         [HttpGet("GetFile")]
-        public ActionResult GetFile([FromBody] DownloadFileInfo fileInfo)
+        public async Task<ActionResult> GetFile([FromBody] DownloadFileInfo fileInfo)
         {
             string program = fileInfo.Program; string version = fileInfo.Version; string filePath = fileInfo.FilePath;
 
@@ -173,16 +177,14 @@ namespace UpdateServer.Controllers
         /// <param name="version">Program version</param>
         /// <returns>Install File</returns>
         [HttpGet("GetInstallFile")]
-        public ActionResult GetInstallFile(string program, string version)
+        public async Task<ActionResult> GetInstallFile(string program, string version)
         {
             var versionFolder = $"programs/{program}/{version}/";
             if (!Directory.Exists(versionFolder)) return BadRequest();
             var installFilePath = Directory.GetFiles(versionFolder).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
             if (installFilePath is null) return BadRequest();
-
-            var stream = new FileInfo(installFilePath).OpenRead();    // Открываем поток.
-            return File(stream, "application/octet-stream", Path.GetFileName(installFilePath)); //new FileStreamResult(stream, "application/octet-stream");
-        }
+            return  new PhysicalFileResult($"{_hostingEnvironment.ContentRootPath}/{installFilePath}", GetMIMEType(installFilePath));
+      }
 
         /// <summary>
         /// Upload new program version
@@ -407,6 +409,23 @@ namespace UpdateServer.Controllers
                     CreateHashFileListAsync($"{version}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Get Mime type
+        /// </summary>
+        /// <param name="fileName">Path to file</param>
+        /// <returns>MIME Type</returns>
+        private string GetMIMEType(string fileName)
+        {
+            var provider =
+                new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+           
+            if (!provider.TryGetContentType(fileName, out string? contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+            return contentType;
         }
     }
 }
