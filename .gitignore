@@ -368,3 +368,4 @@ FodyWeavers.xsd
 UpdateServer/Programs/
 /UpdateServer/DataBase/DataBase.db-wal
 /UpdateServer/DataBase/DataBase.db-shm
+/docker-compose.yml
