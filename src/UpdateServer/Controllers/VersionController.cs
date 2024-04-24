@@ -55,9 +55,6 @@ namespace UpdateServer.Controllers
              
                     if (versions.Count == 0) continue;
                     var actualVersion = versions.Last().ToString(4);
-
-                    //var installFilePath = Directory.GetFiles($"{program.FullName}/{actualVersion}/").FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
-                    //if (installFilePath is null) return BadRequest();
                     programInforms.Add(new(program.Name, actualVersion));
                 }
 
