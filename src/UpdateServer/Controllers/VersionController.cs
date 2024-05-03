@@ -180,7 +180,9 @@ namespace UpdateServer.Controllers
             if (!Directory.Exists(versionFolder)) return BadRequest();
             var installFilePath = Directory.GetFiles(versionFolder).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
             if (installFilePath is null) return BadRequest();
-            return  new PhysicalFileResult($"{_hostingEnvironment.ContentRootPath}/{installFilePath}", GetMIMEType(installFilePath));
+
+            var stream = new FileInfo(installFilePath).OpenRead();    // Открываем поток.
+            return File(stream, "application/octet-stream", Path.GetFileName(installFilePath));
       }
 
         /// <summary>
