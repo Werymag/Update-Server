@@ -38,13 +38,13 @@ namespace UpdateServer.Controllers
         /// </summary>
         [HttpGet("GetPrograms")]
         public ActionResult<List<ProgramInfo>> GetPrograms()
-        {           
+        {
             try
             {
                 // The list of programs corresponding to the list of directories in the Programs folder
                 var directoryInfo = Directory.CreateDirectory($"programs");
                 var programs = directoryInfo.GetDirectories().ToArray();
-         
+
                 var programInforms = new List<ProgramInfo>();
                 foreach (var program in programs)
                 {
@@ -52,7 +52,7 @@ namespace UpdateServer.Controllers
                         .GetDirectories(program.FullName, "*.*")
                         .Select(d => new Version(new DirectoryInfo(d).Name))
                         .Order().ToList();
-             
+
                     if (versions.Count == 0) continue;
                     var actualVersion = versions.Last().ToString(4);
                     programInforms.Add(new(program.Name, actualVersion));
@@ -61,7 +61,7 @@ namespace UpdateServer.Controllers
                 return Ok(programInforms.ToArray());
             }
             catch (Exception e)
-            {                
+            {
                 _logger.LogError(e, e.Message);
                 return Problem(e.Message);
             }
@@ -72,7 +72,7 @@ namespace UpdateServer.Controllers
         /// </summary>
         [HttpGet("GetVersions")]
         public ActionResult<List<ProgramInfo>> GetVersions(string program)
-        {   
+        {
             try
             {
                 // The list of programs corresponding to the list of directories in the programs folder
@@ -125,7 +125,7 @@ namespace UpdateServer.Controllers
                 _logger.LogError(e, e.Message);
                 return Problem(e.Message);
             }
-  
+
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace UpdateServer.Controllers
             {
                 _logger.LogError(e, e.Message);
                 return Problem(e.Message);
-            }         
+            }
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace UpdateServer.Controllers
 
             var stream = new FileInfo(installFilePath).OpenRead();    // Открываем поток.
             return File(stream, "application/octet-stream", Path.GetFileName(installFilePath));
-      }
+        }
 
         /// <summary>
         /// Upload new program version
@@ -324,7 +324,7 @@ namespace UpdateServer.Controllers
 
                 ///Create hash list file
                 CreateHashFileListAsync($"programs/{program}/{version}");
-                return (true,"Ok");
+                return (true, "Ok");
             }
             catch (Exception e)
             {
@@ -333,7 +333,7 @@ namespace UpdateServer.Controllers
                 if (Directory.Exists($"{downloadDirectory}")) { Directory.Delete($"{downloadDirectory}", true); }
                 if (Directory.Exists($"{versionDirectory}")) { Directory.Delete($"{versionDirectory}", true); }
                 if (Directory.GetDirectories($"programs/{program}").Length == 0) { Directory.Delete($"programs/{program}", true); }
-                return (false, e.Message);              
+                return (false, e.Message);
             }
         }
 
@@ -419,7 +419,7 @@ namespace UpdateServer.Controllers
         {
             var provider =
                 new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-           
+
             if (!provider.TryGetContentType(fileName, out string? contentType))
             {
                 contentType = "application/octet-stream";
