@@ -142,4 +142,4 @@ http://{serverulr}/Version/GetInstallFile
 <img src="https://github.com/Werymag/Update-Server/assets/60127528/81720e5a-5ce2-4a6a-9390-a28820397e86" height="170"> <img src="https://github.com/Werymag/Update-Server/assets/60127528/8e9e86f2-e878-4fc6-9b46-445aced82454" height="170"> <img src="https://github.com/Werymag/Update-Server/assets/60127528/2f601592-fc60-4478-bdf4-9d9d02dca9ed" height="170">
 
 
-## В каталоге sripts приведен примеры скриптов для автоматической пубилкации, сборки установочного файла и последующей отправки на сервере декстопного приложения. 
+## В каталоге sripts приведен примеры скриптов для автоматической публикации, сборки установочного файла и последующей отправки на сервере декстопного приложения. 
