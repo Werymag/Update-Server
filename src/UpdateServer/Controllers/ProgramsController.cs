@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+using NLog;
 using UpdateServer.Models;
 
 namespace UpdateServer.Controllers
@@ -14,6 +14,8 @@ namespace UpdateServer.Controllers
 		private readonly ILogger<ProgramsController> _logger;
         private readonly IConfiguration _configuration;
         private readonly VersionController _versionController;
+        private static readonly Logger _downloadLogger = NLog.LogManager.GetLogger("FileDownloadLogger");
+        private static readonly Logger _updaterLogger = NLog.LogManager.GetLogger("UpdateDownloadLogger");
 
         public ProgramsController(ILogger<ProgramsController> logger, IConfiguration configuration, VersionController versionController)
         {
@@ -24,6 +26,8 @@ namespace UpdateServer.Controllers
 
         public IActionResult Index()
         {
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs List");
+
             var programs = _versionController.GetPrograms(); 
             /// TODO проверить не надо ли поменять на OkResult
             if (programs.Result is OkObjectResult okResult)
@@ -36,7 +40,7 @@ namespace UpdateServer.Controllers
         /// </summary>
         public IActionResult Versions(string program)
         {
-            Console.WriteLine(program);
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs files for program: {program}");
 
             var programVersions = _versionController.GetVersions(program);
             if (programVersions.Result is OkObjectResult okResult)
@@ -53,7 +57,10 @@ namespace UpdateServer.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteProgram(string program)
         {
-            var result = await Task.Run(() => _versionController.DeleteProgram(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), program));
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} deleting {program}");
+
+            var result = await Task.Run(() => _versionController
+                .DeleteProgram(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), program));
             if (result is OkResult)
                 return RedirectToAction("Index", "Programs");
             return BadRequest();
@@ -62,9 +69,11 @@ namespace UpdateServer.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteVersion(string program, string version)
         {
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} deleted program version: {program}/{version}");
+
             /// TODO добавить удаление папке при удалении всех версий
-            var result = await Task.Run(() =>
-                _versionController.DeleteVersion(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), program, version)
+            var result = await Task.Run(() => _versionController
+                 .DeleteVersion(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), program, version)
             );
             if (result is OkResult)
                 return RedirectToAction("Versions", "Programs", new { program }); 
@@ -81,13 +90,14 @@ namespace UpdateServer.Controllers
         {
             if (newVersionData is null) return BadRequest("Data is incorrect");
 
-            var result = await _versionController.Upload(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), newVersionData);
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} uploading new version program:{newVersionData.Program}, version: {newVersionData.Version}");
+
+            var result = await _versionController
+                    .Upload(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), newVersionData);
             if (result is OkObjectResult)
                 return RedirectToAction("Version", "Programs", new { newVersionData.Program });
 
-            return BadRequest((result as ObjectResult)?.Value);
-
-         
+            return BadRequest((result as ObjectResult)?.Value);         
         }
 
 

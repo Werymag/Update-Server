@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NLog;
 using System.IO.Compression;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -22,7 +23,8 @@ namespace UpdateServer.Controllers
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _hostingEnvironment;
         private static readonly Logger _downloadLogger = NLog.LogManager.GetLogger("FileDownloadLogger");
-        private static readonly Logger _updaterLogger = NLog.LogManager.GetLogger("UpdateDownloadLoger");
+        private static readonly Logger _updaterLogger = NLog.LogManager.GetLogger("UpdateDownloadLogger");
+        private IPAddress? _iPAddress = null;
         public VersionController(ILogger<VersionController> logger, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
         {
            
@@ -38,7 +40,9 @@ namespace UpdateServer.Controllers
         [HttpGet("GetPrograms")]
         public ActionResult<List<ProgramInfo>> GetPrograms()
         {
-            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs List");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null) _logger.LogInformation($"Ip {ip} getting programs List");
+
             try
             {
                 // The list of programs corresponding to the list of directories in the Programs folder
@@ -73,8 +77,10 @@ namespace UpdateServer.Controllers
         [HttpGet("GetVersions")]
         public ActionResult<List<ProgramInfo>> GetVersions(string program)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting version for program: {program}");
-            _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting version for program: {program}");
+
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null)  _logger.LogInformation($"Ip getting version for program: {program}");          
+
             try
             {
                 // The list of programs corresponding to the list of directories in the programs folder
@@ -112,8 +118,9 @@ namespace UpdateServer.Controllers
         [HttpGet("GetActualVersion")]
         public ActionResult<string> GetActualVersionInfo(string program)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
-            _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null) _updaterLogger.Info($"Ip {ip} getting actual version for program: {program}");
+
             try
             {
                 if (!Path.Exists($"programs/{program}")) return BadRequest("Program not found");
@@ -139,8 +146,9 @@ namespace UpdateServer.Controllers
         [HttpGet("GetFilesListWithHash")]
         public async Task<ActionResult<string>> GetProgramFiles(string program, string version)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs files for program: {program}");
-            _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs files for program: {program}");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null) _updaterLogger.Info($"Ip {ip} getting programs files for program: {program}"); 
+
             try
             {
                 var hashFileListPath = $"programs/{program}/{version}/FilesHash.json";
@@ -181,8 +189,9 @@ namespace UpdateServer.Controllers
         [HttpGet("GetInstallFile")]
         public async Task<ActionResult> GetInstallFile(string program, string version)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting install file");
-            _downloadLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting install file");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null)   _downloadLogger.Info($"Ip {ip} getting install file");
+
             try
             {
                 var versionFolder = $"programs/{program}/{version}/";
@@ -211,7 +220,9 @@ namespace UpdateServer.Controllers
         public async Task<ActionResult> Upload([FromForm] LoginDetails loginDetail,
         [FromForm] NewVersionData newVersionData)
         {
-            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} upload new version program:{newVersionData.Program}, version: {newVersionData.Version}");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null) _logger.LogInformation($"User {ip} upload new version program:{newVersionData.Program}, version: {newVersionData.Version}");
+
             try
             {
                 var login = loginDetail.Login;
@@ -245,7 +256,9 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteProgram")]
         public IActionResult DeleteProgram([FromForm] LoginDetails loginDetail, string? program)
         {
-            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} deleted program: {program}");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null) _logger.LogInformation($"Ip {ip} deleted program: {program}");
+
             try
             {
                 var login = loginDetail.Login;
@@ -282,7 +295,9 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteVersion")]
         public ActionResult DeleteVersion([FromForm] LoginDetails loginDetail, string? program, string? version)
         {
-            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} deleted program version: {program}/{version}");
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            if (ip is not null) _logger.LogInformation($"Ip {ip} deleted program version: {program}/{version}");
+
             var login = loginDetail.Login;
             var password = loginDetail.Password;
 
