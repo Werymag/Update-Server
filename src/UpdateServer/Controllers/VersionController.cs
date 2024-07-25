@@ -41,7 +41,7 @@ namespace UpdateServer.Controllers
         public ActionResult<List<ProgramInfo>> GetPrograms()
         {
             var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
-            if (ip is not null) _logger.LogInformation($"Ip {ip} getting programs List");
+            if (ip is not null) _updaterLogger.Info($"Ip {ip} getting programs List");
 
             try
             {
@@ -79,7 +79,7 @@ namespace UpdateServer.Controllers
         {
 
             var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
-            if (ip is not null)  _logger.LogInformation($"Ip getting version for program: {program}");          
+            if (ip is not null) _updaterLogger.Info($"Ip getting all versions for program: {program}");          
 
             try
             {
