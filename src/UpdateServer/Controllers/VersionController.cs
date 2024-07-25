@@ -112,7 +112,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetActualVersion")]
         public ActionResult<string> GetActualVersionInfo(string program)
         {
-            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
             _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
             try
             {
