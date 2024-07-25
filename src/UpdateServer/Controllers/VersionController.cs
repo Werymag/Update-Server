@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Hosting.Internal;
-using System.Diagnostics;
+using NLog;
 using System.IO.Compression;
-using System.Linq;
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -21,12 +18,14 @@ namespace UpdateServer.Controllers
     [Route("[controller]")]
     public class VersionController : Controller
     {
-        private readonly ILogger<ProgramsController> _logger;
+        private readonly ILogger<VersionController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        public VersionController(ILogger<ProgramsController> logger, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
+        private static readonly Logger _downloadLogger = NLog.LogManager.GetLogger("FileDownloadLogger");
+        private static readonly Logger _updaterLogger = NLog.LogManager.GetLogger("UpdateDownloadLoger");
+        public VersionController(ILogger<VersionController> logger, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
         {
-
+           
             this._logger = logger;
             this._configuration = configuration;
             this._hostingEnvironment = hostingEnvironment;
@@ -39,6 +38,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetPrograms")]
         public ActionResult<List<ProgramInfo>> GetPrograms()
         {
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs List");
             try
             {
                 // The list of programs corresponding to the list of directories in the Programs folder
@@ -73,6 +73,8 @@ namespace UpdateServer.Controllers
         [HttpGet("GetVersions")]
         public ActionResult<List<ProgramInfo>> GetVersions(string program)
         {
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting version for program: {program}");
+            _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting version for program: {program}");
             try
             {
                 // The list of programs corresponding to the list of directories in the programs folder
@@ -110,7 +112,8 @@ namespace UpdateServer.Controllers
         [HttpGet("GetActualVersion")]
         public ActionResult<string> GetActualVersionInfo(string program)
         {
-            _logger.LogDebug($"User {Request.HttpContext.Connection.RemoteIpAddress} getting version List");
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
+            _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting actual version for program: {program}");
             try
             {
                 if (!Path.Exists($"programs/{program}")) return BadRequest("Program not found");
@@ -136,6 +139,8 @@ namespace UpdateServer.Controllers
         [HttpGet("GetFilesListWithHash")]
         public async Task<ActionResult<string>> GetProgramFiles(string program, string version)
         {
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs files for program: {program}");
+            _updaterLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs files for program: {program}");
             try
             {
                 var hashFileListPath = $"programs/{program}/{version}/FilesHash.json";
@@ -176,13 +181,23 @@ namespace UpdateServer.Controllers
         [HttpGet("GetInstallFile")]
         public async Task<ActionResult> GetInstallFile(string program, string version)
         {
-            var versionFolder = $"programs/{program}/{version}/";
-            if (!Directory.Exists(versionFolder)) return BadRequest();
-            var installFilePath = Directory.GetFiles(versionFolder).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
-            if (installFilePath is null) return BadRequest();
+            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting install file");
+            _downloadLogger.Info($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting install file");
+            try
+            {
+                var versionFolder = $"programs/{program}/{version}/";
+                if (!Directory.Exists(versionFolder)) return BadRequest();
+                var installFilePath = Directory.GetFiles(versionFolder).FirstOrDefault(fn => Path.GetExtension(fn) == ".exe");
+                if (installFilePath is null) return BadRequest();
 
-            var stream = new FileInfo(installFilePath).OpenRead();    // Открываем поток.
-            return File(stream, "application/octet-stream", Path.GetFileName(installFilePath));
+                var stream = new FileInfo(installFilePath).OpenRead();    // Открываем поток.
+                return File(stream, "application/octet-stream", Path.GetFileName(installFilePath));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, e.Message);
+                return Problem(e.Message);
+            }
         }
 
         /// <summary>
@@ -196,6 +211,7 @@ namespace UpdateServer.Controllers
         public async Task<ActionResult> Upload([FromForm] LoginDetails loginDetail,
         [FromForm] NewVersionData newVersionData)
         {
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} upload new version program:{newVersionData.Program}, version: {newVersionData.Version}");
             try
             {
                 var login = loginDetail.Login;
@@ -217,10 +233,8 @@ namespace UpdateServer.Controllers
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
                 _logger.LogError(e, e.Message);
                 return Problem(e.Message);
-
             }
         }
 
@@ -231,22 +245,31 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteProgram")]
         public IActionResult DeleteProgram([FromForm] LoginDetails loginDetail, string? program)
         {
-            var login = loginDetail.Login;
-            var password = loginDetail.Password;
-
-            if (string.IsNullOrEmpty(login) && password is null) return Unauthorized();
-
-            if (!Directory.Exists($"programs/{program}/")) return BadRequest();
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} deleted program: {program}");
             try
             {
-                Directory.Delete($"programs/{program}", true);
+                var login = loginDetail.Login;
+                var password = loginDetail.Password;
+
+                if (string.IsNullOrEmpty(login) && password is null) return Unauthorized();
+
+                if (!Directory.Exists($"programs/{program}/")) return BadRequest();
+                try
+                {
+                    Directory.Delete($"programs/{program}", true);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, e.Message);
+                    return Problem(e.Message);
+                }
+                return Ok();
             }
             catch (Exception e)
             {
                 _logger.LogError(e, e.Message);
                 return Problem(e.Message);
             }
-            return Ok();
         }
 
         /// <summary>
@@ -259,6 +282,7 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteVersion")]
         public ActionResult DeleteVersion([FromForm] LoginDetails loginDetail, string? program, string? version)
         {
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} deleted program version: {program}/{version}");
             var login = loginDetail.Login;
             var password = loginDetail.Password;
 
@@ -322,7 +346,7 @@ namespace UpdateServer.Controllers
                 // Rename directory
                 Directory.Move(downloadDirectory, versionDirectory);
 
-                ///Create hash list file
+                // Create hash list file
                 CreateHashFileListAsync($"programs/{program}/{version}");
                 return (true, "Ok");
             }

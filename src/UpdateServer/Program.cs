@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using NLog.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,16 +17,17 @@ builder.Services.AddMvc().AddControllersAsServices();
 
 // Authentication with cookies
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options => options.LoginPath = "/Home/login");
+	.AddCookie(options => options.LoginPath = "/Home/login");
 builder.Services.AddAuthorization();
 
 // Clear all providers
 builder.Logging.ClearProviders();
 // Log to console
-builder.Logging.AddConsole();   
+builder.Logging.AddConsole();
+// Log to file
+builder.Logging.AddNLog("nlog.config");
 
 var app = builder.Build();
-
 
 app.Configuration["login"] = Environment.GetEnvironmentVariable("login");
 app.Configuration["password"] = Environment.GetEnvironmentVariable("password");
@@ -36,8 +38,8 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 
-    app.Configuration["login"] = "admin";
-    app.Configuration["password"] = "admin";
+	app.Configuration["login"] = "admin";
+	app.Configuration["password"] = "admin";
 }
 
 app.UseAuthentication();   // добавление middleware аутентификации 
@@ -55,5 +57,7 @@ app.MapControllers();
 app.MapControllerRoute(
 	name: "default",
 	pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.Logger.LogInformation($"Server started {DateTime.Now}");
 
 app.Run();

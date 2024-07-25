@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Diagnostics;
 using System.Security.Claims;
-using UpdateServer.Models;
 using UpdateServer.ViewModel;
 
 namespace UpdateServer.Controllers
@@ -25,6 +22,7 @@ namespace UpdateServer.Controllers
 
         public IActionResult Index()
         {
+            _logger.LogTrace("Main page loaded");
             return View();
         }
 
@@ -36,9 +34,12 @@ namespace UpdateServer.Controllers
         /// <returns></returns>
         public async Task<IActionResult> Login(string? returnUrl, LoginVewModel authorizationData)
         {
+            _logger.LogInformation($"User {authorizationData.Login} trying to login");
+
             if (authorizationData.Login == _configuration["login"]
                 && authorizationData.Password == _configuration["password"])
             {
+                _logger.LogInformation($"User {authorizationData.Login} successfully logged");
                 var claims = new List<Claim>
                 { new (ClaimTypes.Name, authorizationData.Login) };
                 var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
@@ -46,12 +47,14 @@ namespace UpdateServer.Controllers
                 await HttpContext.SignInAsync(claimsPrincipal);
                 return Redirect(returnUrl ?? "/Home");
             }
+            _logger.LogInformation($"User {authorizationData.Login} login error");
             return View();
         }
 
 
         public async Task<IActionResult> LogOut(string? returnUrl)
         {
+            _logger.LogInformation($"User logOut");
             await HttpContext.SignOutAsync();
             return Redirect(returnUrl ?? "/Home");
         }
@@ -65,6 +68,7 @@ namespace UpdateServer.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
+            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} requested an incorrect address");
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
