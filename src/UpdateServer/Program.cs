@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using NLog.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +32,13 @@ var app = builder.Build();
 
 app.Configuration["login"] = Environment.GetEnvironmentVariable("login");
 app.Configuration["password"] = Environment.GetEnvironmentVariable("password");
+
+// For get ip request in ASP.NET Core on Linux with Nginx
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+	ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+	ForwardedHeaders.XForwardedProto
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

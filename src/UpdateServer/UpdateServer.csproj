@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <Compile Remove="programs\WellForce\**" />
-    <Content Remove="programs\WellForce\**" />
     <EmbeddedResource Remove="programs\WellForce\**" />
     <None Remove="programs\WellForce\**" />
     <TypeScriptCompile Remove="programs\WellForce\**" />
