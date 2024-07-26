@@ -24,7 +24,7 @@ builder.Services.AddAuthorization();
 // Clear all providers
 builder.Logging.ClearProviders();
 // Log to console
-builder.Logging.AddConsole();
+// builder.Logging.AddConsole();
 // Log to file
 builder.Logging.AddNLog("nlog.config");
 

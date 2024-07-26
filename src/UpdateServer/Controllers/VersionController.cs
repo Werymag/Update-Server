@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NLog;
 using System.IO.Compression;
@@ -22,16 +23,16 @@ namespace UpdateServer.Controllers
     {
         private readonly ILogger<VersionController> _logger;
         private readonly IConfiguration _configuration;
-        private readonly IWebHostEnvironment _hostingEnvironment;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private static readonly Logger _downloadLogger = NLog.LogManager.GetLogger("FileDownloadLogger");
         private static readonly Logger _updaterLogger = NLog.LogManager.GetLogger("UpdateDownloadLogger");
         private IPAddress? _iPAddress = null;
-        public VersionController(ILogger<VersionController> logger, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
+        public VersionController(ILogger<VersionController> logger, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
            
             this._logger = logger;
             this._configuration = configuration;
-            this._hostingEnvironment = hostingEnvironment;
+            this._httpContextAccessor = httpContextAccessor;
         }
 
 
@@ -41,8 +42,8 @@ namespace UpdateServer.Controllers
         [HttpGet("GetPrograms")]
         public ActionResult<List<ProgramInfo>> GetPrograms()
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _updaterLogger.Info($"Ip {ip} getting programs List");
+            var clientdata = GetClientData(); //If direct request
+            if (clientdata is not null) _updaterLogger.Info($"Client {clientdata} getting programs List");
 
             try
             {
@@ -79,8 +80,8 @@ namespace UpdateServer.Controllers
         public ActionResult<List<ProgramInfo>> GetVersions(string program)
         {
 
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _updaterLogger.Info($"Ip getting all versions for program: {program}");          
+            var clientdata = GetClientData(); //If direct request
+            if (clientdata is not null) _updaterLogger.Info($"Client: {clientdata} getting all versions for program: {program}");          
 
             try
             {
@@ -119,8 +120,8 @@ namespace UpdateServer.Controllers
         [HttpGet("GetActualVersion")]
         public ActionResult<string> GetActualVersionInfo(string program)
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _updaterLogger.Info($"Ip {ip} getting actual version for program: {program}");
+            var clientdata = GetClientData(); //If direct request
+            if (clientdata is not null) _updaterLogger.Info($"Client {clientdata} getting actual version for program: {program}");
 
             try
             {
@@ -147,8 +148,8 @@ namespace UpdateServer.Controllers
         [HttpGet("GetFilesListWithHash")]
         public async Task<ActionResult<string>> GetProgramFiles(string program, string version)
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _updaterLogger.Info($"Ip {ip} getting programs files for program: {program}"); 
+            var clientdata = GetClientData(); //If direct request
+            if (clientdata is not null) _updaterLogger.Info($"Client {clientdata} getting programs files for program: {program}"); 
 
             try
             {
@@ -190,8 +191,15 @@ namespace UpdateServer.Controllers
         [HttpGet("GetInstallFile")]
         public async Task<ActionResult> GetInstallFile(string program, string version)
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null)   _downloadLogger.Info($"Ip {ip} getting install file");
+            var clientData = GetClientData(); //If direct request
+            if (clientData is not null)
+            {
+                _downloadLogger.Info($"Client {clientData} getting install file");
+                //debug info
+                var headers = _httpContextAccessor?.HttpContext?.Request.Headers.Select(h => $"{h.Key} - {h.Value}");
+                _logger.LogInformation("Request headers:\n\t" + String.Join("\n\t", headers));
+            }
+          
 
             try
             {
@@ -221,8 +229,8 @@ namespace UpdateServer.Controllers
         public async Task<ActionResult> Upload([FromForm] LoginDetails loginDetail,
         [FromForm] NewVersionData newVersionData)
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _logger.LogInformation($"User {ip} upload new version program:{newVersionData.Program}, version: {newVersionData.Version}");
+            var clientData = GetClientData(); //If direct request
+            if (clientData is not null) _logger.LogInformation($"Client {clientData} upload new version program:{newVersionData.Program}, version: {newVersionData.Version}");
 
             try
             {
@@ -257,8 +265,8 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteProgram")]
         public IActionResult DeleteProgram([FromForm] LoginDetails loginDetail, string? program)
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _logger.LogInformation($"Ip {ip} deleted program: {program}");
+            var clientData = GetClientData(); //If direct request
+            if (clientData is not null) _logger.LogInformation($"Client {clientData} deleted program: {program}");
 
             try
             {
@@ -296,8 +304,8 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteVersion")]
         public ActionResult DeleteVersion([FromForm] LoginDetails loginDetail, string? program, string? version)
         {
-            var ip = GetIp(); //If direct request
-            if (ip is not null) _logger.LogInformation($"Ip {ip} deleted program version: {program}/{version}");
+            var clientData = GetClientData(); //If direct request
+            if (clientData is not null) _logger.LogInformation($"Client {clientData} deleted program version: {program}/{version}");
 
             var login = loginDetail.Login;
             var password = loginDetail.Password;
@@ -468,17 +476,17 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Return Ip List
+        /// Return Client Data
         /// </summary>
         /// <returns></returns>
-        private string? GetIp()
+        private string? GetClientData()
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress;
+            var ip = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress;
             if (ip == null) return null;
-            //ip = ip.AddressFamily == AddressFamily.InterNetworkV6 ?
-            //    Dns.GetHostEntry(ip).AddressList.First(x => x.AddressFamily == AddressFamily.InterNetwork) : ip;
-            return ip is null ? null: 
-                string.Join(", ", Dns.GetHostEntry(ip).AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).ToList());
+
+            var forwardIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString();
+            var userAgent = _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].ToString(); 
+            return $"IPs: {string.Join(", ", Dns.GetHostEntry(ip).AddressList.ToList())}, forwardIp:{forwardIp}, userAgent:{userAgent}";
         }
     }
 }

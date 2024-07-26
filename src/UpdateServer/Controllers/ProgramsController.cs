@@ -17,19 +17,21 @@ namespace UpdateServer.Controllers
 		private readonly ILogger<ProgramsController> _logger;
         private readonly IConfiguration _configuration;
         private readonly VersionController _versionController;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private static readonly Logger _downloadLogger = NLog.LogManager.GetLogger("FileDownloadLogger");
         private static readonly Logger _updaterLogger = NLog.LogManager.GetLogger("UpdateDownloadLogger");
 
-        public ProgramsController(ILogger<ProgramsController> logger, IConfiguration configuration, VersionController versionController)
+        public ProgramsController(ILogger<ProgramsController> logger, IConfiguration configuration, VersionController versionController, IHttpContextAccessor httpContextAccessor)
         {
 			this._logger = logger;
             this._configuration = configuration;
             this._versionController = versionController;
+            this._httpContextAccessor = httpContextAccessor;
         }
 
         public IActionResult Index()
         {        
-            _logger.LogInformation($"Ip {GetIp()} getting programs List");
+            _logger.LogInformation($"Client {GetClientData()} getting programs List");
           
               var programs = _versionController.GetPrograms(); 
             /// TODO проверить не надо ли поменять на OkResult
@@ -43,7 +45,7 @@ namespace UpdateServer.Controllers
         /// </summary>
         public IActionResult Versions(string program)
         {
-            _logger.LogInformation($"Ip {GetIp()} getting programs files for program: {program}");
+            _logger.LogInformation($"Client {GetClientData()} getting programs files for program: {program}");
 
             var programVersions = _versionController.GetVersions(program);
             if (programVersions.Result is OkObjectResult okResult)
@@ -60,7 +62,7 @@ namespace UpdateServer.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteProgram(string program)
         {
-            _logger.LogInformation($"Ip {GetIp()} deleting {program}");
+            _logger.LogInformation($"Client {GetClientData()} deleting {program}");
 
             var result = await Task.Run(() => _versionController
                 .DeleteProgram(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), program));
@@ -72,7 +74,7 @@ namespace UpdateServer.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteVersion(string program, string version)
         {
-            _logger.LogInformation($"Ip {GetIp()} deleted program version: {program}/{version}");
+            _logger.LogInformation($"Client {GetClientData()} deleted program version: {program}/{version}");
 
             /// TODO добавить удаление папке при удалении всех версий
             var result = await Task.Run(() => _versionController
@@ -93,7 +95,7 @@ namespace UpdateServer.Controllers
         {
             if (newVersionData is null) return BadRequest("Data is incorrect");
 
-            _logger.LogInformation($"User {GetIp()} uploading new version program:{newVersionData.Program}, version: {newVersionData.Version}");
+            _logger.LogInformation($"User {GetClientData()} uploading new version program:{newVersionData.Program}, version: {newVersionData.Version}");
 
             var result = await _versionController
                     .Upload(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), newVersionData);
@@ -104,17 +106,17 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Return Ip List
+        /// Return Client Data
         /// </summary>
         /// <returns></returns>
-        private string? GetIp()
+        private string? GetClientData()
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress;
+            var ip = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress;
             if (ip == null) return null;
-            //ip = ip.AddressFamily == AddressFamily.InterNetworkV6 ?
-            //    Dns.GetHostEntry(ip).AddressList.First(x => x.AddressFamily == AddressFamily.InterNetwork) : ip;
-            return ip is null ? null :
-                string.Join(", ", Dns.GetHostEntry(ip).AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).ToList());
+            var forwardIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString();
+            var userAgent = _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].ToString();   
+
+            return $"IPs: {string.Join(", ", Dns.GetHostEntry(ip).AddressList.ToList())}, forwardIp:{forwardIp}, userAgent:{userAgent}";
         }
     }
 }
