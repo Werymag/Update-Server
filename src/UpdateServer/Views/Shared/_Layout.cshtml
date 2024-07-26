@@ -26,17 +26,17 @@
                         @if (@User?.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Programs" asp-action="Upload">Загрузить новую версию</a>
+                                <a class="navbar-brand  nav-link text-dark" asp-area="" asp-controller="Programs" asp-action="Upload">Загрузить новую версию</a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Logout">Выход</a>
+                                <a class="navbar-brand  nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Logout">Выход</a>
                             </li>
                         }
                         @if (@User?.Identity?.IsAuthenticated != true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Login">Вход</a>
+                                <a class="navbar-brand  nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Login">Вход</a>
                             </li>
                         }
                     </ul>

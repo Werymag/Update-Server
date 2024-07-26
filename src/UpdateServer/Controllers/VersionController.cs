@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using NLog;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -40,7 +41,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetPrograms")]
         public ActionResult<List<ProgramInfo>> GetPrograms()
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _updaterLogger.Info($"Ip {ip} getting programs List");
 
             try
@@ -78,7 +79,7 @@ namespace UpdateServer.Controllers
         public ActionResult<List<ProgramInfo>> GetVersions(string program)
         {
 
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _updaterLogger.Info($"Ip getting all versions for program: {program}");          
 
             try
@@ -118,7 +119,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetActualVersion")]
         public ActionResult<string> GetActualVersionInfo(string program)
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _updaterLogger.Info($"Ip {ip} getting actual version for program: {program}");
 
             try
@@ -146,7 +147,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetFilesListWithHash")]
         public async Task<ActionResult<string>> GetProgramFiles(string program, string version)
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _updaterLogger.Info($"Ip {ip} getting programs files for program: {program}"); 
 
             try
@@ -189,7 +190,7 @@ namespace UpdateServer.Controllers
         [HttpGet("GetInstallFile")]
         public async Task<ActionResult> GetInstallFile(string program, string version)
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null)   _downloadLogger.Info($"Ip {ip} getting install file");
 
             try
@@ -220,7 +221,7 @@ namespace UpdateServer.Controllers
         public async Task<ActionResult> Upload([FromForm] LoginDetails loginDetail,
         [FromForm] NewVersionData newVersionData)
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _logger.LogInformation($"User {ip} upload new version program:{newVersionData.Program}, version: {newVersionData.Version}");
 
             try
@@ -256,7 +257,7 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteProgram")]
         public IActionResult DeleteProgram([FromForm] LoginDetails loginDetail, string? program)
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _logger.LogInformation($"Ip {ip} deleted program: {program}");
 
             try
@@ -295,7 +296,7 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteVersion")]
         public ActionResult DeleteVersion([FromForm] LoginDetails loginDetail, string? program, string? version)
         {
-            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress; //If direct request
+            var ip = GetIp(); //If direct request
             if (ip is not null) _logger.LogInformation($"Ip {ip} deleted program version: {program}/{version}");
 
             var login = loginDetail.Login;
@@ -464,6 +465,20 @@ namespace UpdateServer.Controllers
                 contentType = "application/octet-stream";
             }
             return contentType;
+        }
+
+        /// <summary>
+        /// Return Ip List
+        /// </summary>
+        /// <returns></returns>
+        private string? GetIp()
+        {
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress;
+            if (ip == null) return null;
+            //ip = ip.AddressFamily == AddressFamily.InterNetworkV6 ?
+            //    Dns.GetHostEntry(ip).AddressList.First(x => x.AddressFamily == AddressFamily.InterNetwork) : ip;
+            return ip is null ? null: 
+                string.Join(", ", Dns.GetHostEntry(ip).AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).ToList());
         }
     }
 }

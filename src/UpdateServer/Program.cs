@@ -36,8 +36,10 @@ app.Configuration["password"] = Environment.GetEnvironmentVariable("password");
 // For get ip request in ASP.NET Core on Linux with Nginx
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-	ForwardedHeaders = ForwardedHeaders.XForwardedFor |
-	ForwardedHeaders.XForwardedProto
+    //Identifies which forwarders should be processed.	
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+    //The middleware updates the Request.Scheme for security policies to work properly.
+    ForwardedHeaders.XForwardedProto
 });
 
 // Configure the HTTP request pipeline.

@@ -1,7 +1,10 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using NLog;
+using System.Net;
+using System.Net.Sockets;
 using UpdateServer.Models;
 
 namespace UpdateServer.Controllers
@@ -25,10 +28,10 @@ namespace UpdateServer.Controllers
         }
 
         public IActionResult Index()
-        {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs List");
-
-            var programs = _versionController.GetPrograms(); 
+        {        
+            _logger.LogInformation($"Ip {GetIp()} getting programs List");
+          
+              var programs = _versionController.GetPrograms(); 
             /// TODO проверить не надо ли поменять на OkResult
             if (programs.Result is OkObjectResult okResult)
                 return View(okResult.Value);        
@@ -40,7 +43,7 @@ namespace UpdateServer.Controllers
         /// </summary>
         public IActionResult Versions(string program)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} getting programs files for program: {program}");
+            _logger.LogInformation($"Ip {GetIp()} getting programs files for program: {program}");
 
             var programVersions = _versionController.GetVersions(program);
             if (programVersions.Result is OkObjectResult okResult)
@@ -57,7 +60,7 @@ namespace UpdateServer.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteProgram(string program)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} deleting {program}");
+            _logger.LogInformation($"Ip {GetIp()} deleting {program}");
 
             var result = await Task.Run(() => _versionController
                 .DeleteProgram(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), program));
@@ -69,7 +72,7 @@ namespace UpdateServer.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteVersion(string program, string version)
         {
-            _logger.LogInformation($"Ip {Request?.HttpContext?.Connection?.RemoteIpAddress} deleted program version: {program}/{version}");
+            _logger.LogInformation($"Ip {GetIp()} deleted program version: {program}/{version}");
 
             /// TODO добавить удаление папке при удалении всех версий
             var result = await Task.Run(() => _versionController
@@ -90,7 +93,7 @@ namespace UpdateServer.Controllers
         {
             if (newVersionData is null) return BadRequest("Data is incorrect");
 
-            _logger.LogInformation($"User {Request?.HttpContext?.Connection?.RemoteIpAddress} uploading new version program:{newVersionData.Program}, version: {newVersionData.Version}");
+            _logger.LogInformation($"User {GetIp()} uploading new version program:{newVersionData.Program}, version: {newVersionData.Version}");
 
             var result = await _versionController
                     .Upload(new(_configuration["login"] ?? "", _configuration["password"] ?? ""), newVersionData);
@@ -100,6 +103,18 @@ namespace UpdateServer.Controllers
             return BadRequest((result as ObjectResult)?.Value);         
         }
 
-
-	}
+        /// <summary>
+        /// Return Ip List
+        /// </summary>
+        /// <returns></returns>
+        private string? GetIp()
+        {
+            var ip = Request?.HttpContext?.Connection?.RemoteIpAddress;
+            if (ip == null) return null;
+            //ip = ip.AddressFamily == AddressFamily.InterNetworkV6 ?
+            //    Dns.GetHostEntry(ip).AddressList.First(x => x.AddressFamily == AddressFamily.InterNetwork) : ip;
+            return ip is null ? null :
+                string.Join(", ", Dns.GetHostEntry(ip).AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork).ToList());
+        }
+    }
 }
