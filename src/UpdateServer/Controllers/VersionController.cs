@@ -485,8 +485,8 @@ namespace UpdateServer.Controllers
             if (ip == null) return null;
 
             var forwardIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString();
-            var userAgent = _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].ToString(); 
-            return $"IPs: {string.Join(", ", Dns.GetHostEntry(ip).AddressList.ToList())}, forwardIp:{forwardIp}, userAgent:{userAgent}";
+            var userAgent = _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].ToString();
+            return $"IPs: {string.Join(", ", Dns.GetHostEntry(ip).AddressList.ToList())}, ForwardIp:{forwardIp}, UserAgent:{userAgent}";
         }
     }
 }
