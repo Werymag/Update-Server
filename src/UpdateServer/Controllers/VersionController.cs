@@ -76,7 +76,7 @@ namespace UpdateServer.Controllers
         /// Get a list of available version of program
         /// </summary>
         [HttpGet("GetVersions")]
-        public ActionResult<List<ProgramInfo>> GetVersions(string program)
+        public ActionResult<VersionViewModel> GetVersions(string program)
         {
             _logger.LogInformation($"Client {GetClientData()} getting all versions for program: {program}");
 
@@ -190,7 +190,7 @@ namespace UpdateServer.Controllers
         {
             var clientData = GetClientData(); //If direct request
 
-            _downloadLogger.Info($"Client {clientData} getting install file");
+            _downloadLogger.Info($"Client {clientData} get install file {program}:{version}");
             // info about new client :)
             var headers = _httpContextAccessor?.HttpContext?.Request.Headers.Select(h => $"{h.Key} - {h.Value}");
             _logger.LogInformation("Someone download new install file:\n\t" + String.Join("\n\t", headers));
@@ -362,7 +362,7 @@ namespace UpdateServer.Controllers
                 Directory.Move(downloadDirectory, versionDirectory);
 
                 // Create hash list file
-                CreateHashFileListAsync($"programs/{program}/{version}");
+                await CreateHashFileListAsync($"programs/{program}/{version}");
                 return (true, "Ok");
             }
             catch (Exception e)
@@ -401,7 +401,7 @@ namespace UpdateServer.Controllers
         /// Create files list with md5 hash
         /// </summary>
         [NonAction]
-        private async void CreateHashFileListAsync(string programDirectory)
+        private async Task CreateHashFileListAsync(string programDirectory)
         {
             if (!Directory.Exists(programDirectory)) BadRequest();
             var source = $"{programDirectory}/src";
@@ -444,7 +444,7 @@ namespace UpdateServer.Controllers
                 var versions = Directory.GetDirectories($"{program}");
                 foreach (var version in versions)
                 {
-                    CreateHashFileListAsync($"{version}");
+                    await CreateHashFileListAsync($"{version}");
                 }
             }
         }
@@ -475,10 +475,15 @@ namespace UpdateServer.Controllers
             var ip = _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress;
             if (ip is null) return null;
 
-            var forwardIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString();
+            var xForwardIp = _httpContextAccessor?.HttpContext?.Request.Headers["X-Forwarded-For"].ToString();            
+            var xRealIpAgent = _httpContextAccessor?.HttpContext?.Request.Headers["X-Real-IP"].ToString();
             var userAgent = _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].ToString();
 
-            return $"IPs: {string.Join(", ", Dns.GetHostEntry(ip).AddressList.ToList())}, ForwardIp:{forwardIp}, UserAgent:{userAgent}";
+            var realIp = !String.IsNullOrEmpty(xRealIpAgent) ? xRealIpAgent :
+                         !String.IsNullOrEmpty(xForwardIp) ? xForwardIp :
+                          string.Join(", ", Dns.GetHostEntry(ip).AddressList.ToList());
+
+            return $"IPs: {realIp}, UserAgent:{userAgent}";
         }
     }
 }
