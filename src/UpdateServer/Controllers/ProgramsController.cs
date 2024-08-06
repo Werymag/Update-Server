@@ -89,7 +89,6 @@ namespace UpdateServer.Controllers
             return View(log);
         }
 
-
         /// <summary>
         /// Upload new version
         /// </summary>

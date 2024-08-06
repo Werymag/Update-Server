@@ -4,6 +4,11 @@
 <h1>@ViewData["Title"]</h1>
 
 <div>
+    @if (@ViewBag.ErrorMesage is not null)
+    {
+        <h3><font color="red">@ViewBag.ErrorMesage</font></h3>
+
+    }
     <form method='post'>
         <p>
             <label>Login</label><br />

@@ -227,15 +227,7 @@ namespace UpdateServer.Controllers
 
             try
             {
-                var login = loginDetail.Login;
-                var password = loginDetail.Password;
-
-                if (string.IsNullOrEmpty(login) && string.IsNullOrEmpty(password)) return Unauthorized();
-
-                var isAuthorize = (loginDetail.Login == _configuration["login"]
-                                && loginDetail.Password == _configuration["password"]);
-
-                if (!isAuthorize) return Unauthorized();
+                if (!CheckLogin(loginDetail)) return Unauthorized();
 
                 if (string.IsNullOrEmpty(newVersionData.Version) && string.IsNullOrEmpty(newVersionData.Program)) return BadRequest("File name or version isn't correct");
 
@@ -251,6 +243,7 @@ namespace UpdateServer.Controllers
             }
         }
 
+
         /// <summary>
         /// Delete program
         /// </summary>    
@@ -262,10 +255,7 @@ namespace UpdateServer.Controllers
 
             try
             {
-                var login = loginDetail.Login;
-                var password = loginDetail.Password;
-
-                if (string.IsNullOrEmpty(login) && password is null) return Unauthorized();
+                if (!CheckLogin(loginDetail)) return Unauthorized();
 
                 if (!Directory.Exists($"programs/{program}/")) return BadRequest();
                 try
@@ -296,12 +286,8 @@ namespace UpdateServer.Controllers
         [HttpGet("DeleteVersion")]
         public ActionResult DeleteVersion([FromForm] LoginDetails loginDetail, string? program, string? version)
         {
+            if (!CheckLogin(loginDetail)) return Unauthorized();
             _logger.LogInformation($"Client {GetClientData()}  deleted program version: {program}/{version}");
-
-            var login = loginDetail.Login;
-            var password = loginDetail.Password;
-
-            if (string.IsNullOrEmpty(login) && password is null) return Unauthorized();
 
             if (!Directory.Exists($"programs/{program}/{version}")) return BadRequest();
             try
@@ -398,9 +384,23 @@ namespace UpdateServer.Controllers
         }
 
         /// <summary>
-        /// Create files list with md5 hash
+        /// Check login data
         /// </summary>
         [NonAction]
+        public bool CheckLogin(LoginDetails? loginDetail)
+        {
+            var isAutorize = false;
+            if (string.IsNullOrEmpty(loginDetail?.Login) && string.IsNullOrEmpty(loginDetail?.Password)) isAutorize = false;
+            if (loginDetail?.Login == _configuration["login"]?.ToLower() && loginDetail?.Password == _configuration["password"]) isAutorize = true;
+
+            if (!isAutorize) _logger.LogInformation($"User {loginDetail?.Login} filed atorization");
+            return isAutorize;
+        }
+
+        /// <summary>
+        /// Create files list with md5 hash
+        /// </summary>
+
         private async Task CreateHashFileListAsync(string programDirectory)
         {
             if (!Directory.Exists(programDirectory)) BadRequest();
@@ -423,7 +423,7 @@ namespace UpdateServer.Controllers
         /// </summary>
         /// <param name="filePath">File path</param>
         /// <returns>Has md5 string</returns>
-        [NonAction]
+
         private async Task<string> CreateHashStringForFileAsync(string filePath)
         {
             using var md5 = MD5.Create();
@@ -435,7 +435,6 @@ namespace UpdateServer.Controllers
         /// <summary>
         /// Create files lists with md5 hash
         /// </summary>
-        [NonAction]
         private async void RecreateAllHashFilesAsync()
         {
             var programs = Directory.GetDirectories("programs");
@@ -485,5 +484,7 @@ namespace UpdateServer.Controllers
 
             return $"IPs: {realIp}, UserAgent:{userAgent}";
         }
+
+       
     }
 }

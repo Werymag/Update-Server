@@ -30,7 +30,7 @@ builder.Logging.AddNLog("nlog.config");
 
 var app = builder.Build();
 
-app.Configuration["login"] = Environment.GetEnvironmentVariable("login");
+app.Configuration["login"] = Environment.GetEnvironmentVariable("login")?.ToLower();
 app.Configuration["password"] = Environment.GetEnvironmentVariable("password");
 
 // For get ip request in ASP.NET Core on Linux with Nginx

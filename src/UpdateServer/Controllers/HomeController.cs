@@ -34,9 +34,10 @@ namespace UpdateServer.Controllers
         /// <returns></returns>
         public async Task<IActionResult> Login(string? returnUrl, LoginVewModel authorizationData)
         {
-            _logger.LogInformation($"User {authorizationData.Login} trying to login");
+            _logger.LogInformation($"User {authorizationData?.Login} trying to login");           
+            if (String.IsNullOrEmpty(authorizationData?.Login) && String.IsNullOrEmpty(authorizationData?.Password)) return View();
 
-            if (authorizationData.Login == _configuration["login"]
+            if (authorizationData.Login.ToLower() == _configuration["login"]
                 && authorizationData.Password == _configuration["password"])
             {
                 _logger.LogInformation($"User {authorizationData.Login} successfully logged");
@@ -47,10 +48,11 @@ namespace UpdateServer.Controllers
                 await HttpContext.SignInAsync(claimsPrincipal);
                 return Redirect(returnUrl ?? "/Home");
             }
+
             _logger.LogInformation($"User {authorizationData.Login} login error");
+            ViewBag.ErrorMesage = "Некорректный логин или пароль";
             return View();
         }
-
 
         public async Task<IActionResult> LogOut(string? returnUrl)
         {
@@ -63,7 +65,6 @@ namespace UpdateServer.Controllers
         {
             return View();
         }
-
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
