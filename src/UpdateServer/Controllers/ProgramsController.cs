@@ -1,10 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
-using NLog;
-using System.Net;
-using System.Net.Sockets;
 using UpdateServer.Models;
 
 namespace UpdateServer.Controllers
@@ -74,6 +70,25 @@ namespace UpdateServer.Controllers
                 return RedirectToAction("Versions", "Programs", new { program });
             return BadRequest();
         }
+
+        [Authorize]
+        public async Task<IActionResult> Logs()
+        {
+            var test =  Directory.GetDirectories(".");
+            if (!System.IO.Directory.Exists("logs")) BadRequest();
+            var logFiles = Directory.GetFiles("logs");
+            return View(logFiles.Select(fn => Path.GetFileName(fn)).ToArray());
+        }
+
+        [Authorize]
+        public async Task<IActionResult> Log(string logName)
+        {
+            if (!System.IO.File.Exists($"logs/{logName}")) BadRequest();
+            var log = System.IO.File.ReadLines($"logs/{logName}").ToArray();
+            ViewBag.LogName = logName;  
+            return View(log);
+        }
+
 
         /// <summary>
         /// Upload new version

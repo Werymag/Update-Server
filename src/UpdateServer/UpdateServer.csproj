@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -8,12 +8,6 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="programs\WellForce\**" />
-    <EmbeddedResource Remove="programs\WellForce\**" />
-    <None Remove="programs\WellForce\**" />
-    <TypeScriptCompile Remove="programs\WellForce\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <Content Remove="Views\Shared\Index.cshtml" />
@@ -123,5 +117,4 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-
 </Project>

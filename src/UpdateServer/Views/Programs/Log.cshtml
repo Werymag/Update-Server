@@ -1,0 +1,12 @@
+﻿@model string[]
+@{
+    ViewData["Title"] = ViewBag.LogName;
+}
+<h1>@ViewData["Title"]</h1>
+<hr>
+<div>
+    @foreach (var logLine in Model)
+    {
+        <p>@logLine</p>
+    }
+</div>
